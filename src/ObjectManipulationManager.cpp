@@ -1,28 +1,58 @@
 #include "ObjectManipulationManager.h"
 
-void ObjectManipulationManager::Install() {
-    auto hb = new HookBuilder();
-    hb->AddCall<CameraHook, 5, 14>(49852, 0x50, 50784, 0x54);
-    hb->Install();
-    delete hb;
+void ObjectManipulationManager::ApplyShader(State id) {
+    if (id != currentState) {
+        SKSE::GetTaskInterface()->AddTask([id]() {
+            shaderRef = pickedObject->ApplyEffectShader(shaders[id]);
+        });
+    }
 }
 
-void ObjectManipulationManager::Pick(RE::TESObjectREFR* obj) {
-    pickedObject = obj;
-    SKSE::GetTaskInterface()->AddTask([obj]() {
-        const auto dataHandler = RE::TESDataHandler::GetSingleton();
-        auto shaderFormId = dataHandler->LookupFormID(0x800, "FX.esp");
-        auto shader = RE::TESForm::LookupByID<RE::TESEffectShader>(shaderFormId);
-        shaderRef = obj->ApplyEffectShader(shader);
-    });
-}
-
-void ObjectManipulationManager::Release(RE::TESObjectREFR* obj) {
-    pickedObject = nullptr;
+void ObjectManipulationManager::CleanShader() {
     if (shaderRef) {
         shaderRef->ClearTarget();
         delete shaderRef;
     }
+}
+
+RE::TESEffectShader* LookUpShader(uint32_t id) {
+    const auto dataHandler = RE::TESDataHandler::GetSingleton();
+    auto shaderFormId = dataHandler->LookupFormID(id, "FX.esp");
+    return RE::TESForm::LookupByID<RE::TESEffectShader>(shaderFormId);
+}
+
+void ObjectManipulationManager::Install() {
+    auto hb = new HookBuilder();
+    hb->AddCall<CameraHook, 5, 14>(49852, 0x50, 50784, 0x54);
+    hb->Install();
+
+    shaders[State::Valid] = LookUpShader(0x800);
+    shaders[State::Error] = LookUpShader(0x801);
+    shaders[State::Warn] = LookUpShader(0x802);
+
+    delete hb;
+}
+
+void ObjectManipulationManager::Pick(RE::TESObjectREFR* obj) {
+    if (obj) {
+        pickedObject = obj;
+        pickedObjectHasCollison = (obj->formFlags & RE::TESObjectREFR::RecordFlags::kCollisionsDisabled) == 0;
+        if (pickedObjectHasCollison) {
+            obj->formFlags |= RE::TESObjectREFR::RecordFlags::kCollisionsDisabled;
+        }
+    }
+
+}
+
+void ObjectManipulationManager::Release() {
+    if (pickedObject) {
+        if (pickedObjectHasCollison) {
+            pickedObject->formFlags &= ~RE::TESObjectREFR::RecordFlags::kCollisionsDisabled;
+        }
+        pickedObject = nullptr;
+        CleanShader();
+    }
+
 }
 
 void  ObjectManipulationManager::CameraHook::thunk(void*, RE::TESObjectREFR** refPtr) {
@@ -30,7 +60,6 @@ void  ObjectManipulationManager::CameraHook::thunk(void*, RE::TESObjectREFR** re
 
             auto obj = pickedObject;
 
-            //pickedObject->formFlags |= RE::TESObjectREFR::RecordFlags::kCollisionsDisabled;
             SKSE::GetTaskInterface()->AddTask([obj]() {
 
                 RE::PlayerCamera* camera = RE::PlayerCamera::GetSingleton();
@@ -54,6 +83,12 @@ void  ObjectManipulationManager::CameraHook::thunk(void*, RE::TESObjectREFR** re
                 Utils::SetAngle(obj,
                          RE::NiPoint3(0, 0, std::atan2(camera->pos.x - pos.x, camera->pos.y - pos.y) + M_PI));
                 obj->Update3DPosition(true);
+
+                if (Utils::DistanceBetweenTwoPoints(camera->pos, pos) < 1000) {
+                    ApplyShader(State::Valid);
+                } else {
+                    ApplyShader(State::Error);
+                }
             });
         }
 }

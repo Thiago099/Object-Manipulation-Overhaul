@@ -99,3 +99,10 @@ void Utils::SetAngle(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position) {
     REL::Relocation<func_t> func{RELOCATION_ID(19359, 19786)};
     return func(ref, a_position);
 }
+
+float Utils::DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b){
+    double dx = b.x - a.x;
+    double dy = b.y - a.y;
+    double dz = b.z - a.z;
+    return std::sqrt(dx * dx + dy * dy + dz * dz);
+}
