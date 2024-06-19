@@ -17,7 +17,7 @@ void ObjectManipulationManager::CleanShader() {
 
 RE::TESEffectShader* LookUpShader(uint32_t id) {
     const auto dataHandler = RE::TESDataHandler::GetSingleton();
-    auto shaderFormId = dataHandler->LookupFormID(id, "FX.esp");
+    auto shaderFormId = dataHandler->LookupFormID(id, "ObjectManipulator.esp");
     return RE::TESForm::LookupByID<RE::TESEffectShader>(shaderFormId);
 }
 
