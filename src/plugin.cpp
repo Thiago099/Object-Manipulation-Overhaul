@@ -27,6 +27,12 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         auto cheeseBase = RE::TESForm::LookupByID<RE::TESBoundObject>(0x15bab);
         auto cheeseRef = RE::PlayerCharacter::GetSingleton()->PlaceObjectAtMe(cheeseBase, true);
         cheese = cheeseRef.get();
+        auto c = cheese;
+        auto shader = RE::TESForm::LookupByID<RE::TESEffectShader>(0x11000800);
+        SKSE::GetTaskInterface()->AddTask([c, shader]() {
+            c->ApplyEffectShader(shader);
+        });
+
     }
 }
 
@@ -56,8 +62,7 @@ struct CameraHook {
                          RE::NiPoint3(0, 0,
                                       std::atan2(camera->pos.x - pos.x,
                                                  camera->pos.y - pos.y)+M_PI));
-                c->Update3DPosition(true);
-
+                cheese->Update3DPosition(true);
             });
 
         }
