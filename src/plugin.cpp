@@ -49,12 +49,12 @@ struct CameraHook {
 
             auto pos = raycast(player, rotation, camera->pos);
   
-
-              
+            auto c = cheese;
             logger::info("pos: x: {},y: {},x:{}", pos.x, pos.y, pos.z);
-
-            MoveObjectTo(cheese, player->GetHandle(), player->GetParentCell(), player->GetWorldspace(), pos,
-                         RE::NiPoint3(0, 0, 0));
+            SKSE::GetTaskInterface()->AddTask([c, player, pos]() {
+                MoveObjectTo(c, c->GetHandle(), player->GetParentCell(), player->GetWorldspace(), pos,
+                            RE::NiPoint3(0, 0, 0));
+            });
 
         }
     }

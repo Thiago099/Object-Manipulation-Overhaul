@@ -67,13 +67,21 @@ RE::NiPoint3 CalculateLOSLocation(RE::TESObjectREFR* refr, LineOfSightLocation l
     return skyrim_function<46021, 47282, decltype(CalculateLOSLocation)>::eval(refr, los_loc);
 }
 
+RE::MagicTarget* FindPickTarget(RE::MagicCaster* caster, RE::NiPoint3& a_targetLocation, RE::TESObjectCELL** a_targetCell,
+                                RE::bhkPickData& a_pickData) {
+    using func_t = RE::MagicTarget* (RE::MagicCaster * caster, RE::NiPoint3 & a_targetLocation,
+                                    RE::TESObjectCELL * *a_targetCell, RE::bhkPickData & a_pickData);
+    REL::Relocation<func_t> func{RELOCATION_ID(33676, 34456)};
+    return func(caster, a_targetLocation, a_targetCell, a_pickData);
+}
+
 RE::NiPoint3 raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position) {
     auto havokWorldScale = RE::bhkWorld::GetWorldScale();
     RE::bhkPickData pick_data;
     RE::NiPoint3 ray_start, ray_end;
 
     //ray_start = CalculateLOSLocation(caster, LineOfSightLocation::kHead);
-    ray_start = CalculateLOSLocation(caster, LineOfSightLocation::kHead);
+    ray_start = position;
     ray_end = ray_start + rotate(2000000000, QuaternionToEuler(angle));
     pick_data.rayInput.from = ray_start * havokWorldScale;
     pick_data.rayInput.to = ray_end * havokWorldScale;
@@ -82,33 +90,12 @@ RE::NiPoint3 raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 pos
     caster->GetCollisionFilterInfo(collisionFilterInfo);
     pick_data.rayInput.filterInfo = (static_cast<uint32_t>(collisionFilterInfo >> 16) << 16) |
                                     static_cast<uint32_t>(RE::COL_LAYER::kCharController);
+    //RE::TES::GetSingleton()->Pick(pick_data);
+    caster
+        ->GetParentCell()
+        ->GetbhkWorld()
+        ->PickObject(pick_data);
 
-    caster->GetParentCell()->GetbhkWorld()->PickObject(pick_data);
-    RE::NiPoint3 hitpos;
-    if (pick_data.rayOutput.HasHit()) {
-        hitpos = ray_start + (ray_end - ray_start) * pick_data.rayOutput.hitFraction;
-    } else {
-        hitpos = ray_end;
-    }
-    return hitpos;
-}
-
-RE::NiPoint3 raycast(RE::Actor* caster) {
-    auto havokWorldScale = RE::bhkWorld::GetWorldScale();
-    RE::bhkPickData pick_data;
-    RE::NiPoint3 ray_start, ray_end;
-
-    ray_start = CalculateLOSLocation(caster, LineOfSightLocation::kEyes);
-    ray_end = ray_start + caster->data.angle * 2000000000;
-    pick_data.rayInput.from = ray_start * havokWorldScale;
-    pick_data.rayInput.to = ray_end * havokWorldScale;
-
-    uint32_t collisionFilterInfo = 0;
-    caster->GetCollisionFilterInfo(collisionFilterInfo);
-    pick_data.rayInput.filterInfo = (static_cast<uint32_t>(collisionFilterInfo >> 16) << 16) |
-                                    static_cast<uint32_t>(RE::COL_LAYER::kCharController);
-
-    caster->GetParentCell()->GetbhkWorld()->PickObject(pick_data);
     RE::NiPoint3 hitpos;
     if (pick_data.rayOutput.HasHit()) {
         hitpos = ray_start + (ray_end - ray_start) * pick_data.rayOutput.hitFraction;
