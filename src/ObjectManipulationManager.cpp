@@ -22,15 +22,17 @@ RE::TESEffectShader* LookUpShader(uint32_t id) {
 }
 
 void ObjectManipulationManager::Install() {
-    auto hb = new HookBuilder();
-    hb->AddCall<CameraHook, 5, 14>(49852, 0x50, 50784, 0x54);
-    hb->Install();
+    auto builder = new HookBuilder();
+    builder->AddCall<CameraHook, 5, 14>(49852, 0x50, 50784, 0x54);
+    builder->AddCall<ProcessInputQueueHook, 5, 14>(67315, 0x7B, 68617, 0x7B, 0xC519E0, 0x81);
+
+    builder->Install();
 
     shaders[State::Valid] = LookUpShader(0x800);
     shaders[State::Error] = LookUpShader(0x801);
     shaders[State::Warn] = LookUpShader(0x802);
 
-    delete hb;
+    delete builder;
 }
 
 void ObjectManipulationManager::Pick(RE::TESObjectREFR* obj) {
@@ -40,12 +42,14 @@ void ObjectManipulationManager::Pick(RE::TESObjectREFR* obj) {
         if (pickedObjectHasCollison) {
             obj->formFlags |= RE::TESObjectREFR::RecordFlags::kCollisionsDisabled;
         }
+        currentState = State::Valid;
     }
 
 }
 
 void ObjectManipulationManager::Release() {
     if (pickedObject) {
+        currentState = State::Idle;
         if (pickedObjectHasCollison) {
             pickedObject->formFlags &= ~RE::TESObjectREFR::RecordFlags::kCollisionsDisabled;
         }
@@ -56,7 +60,7 @@ void ObjectManipulationManager::Release() {
 }
 
 void  ObjectManipulationManager::CameraHook::thunk(void*, RE::TESObjectREFR** refPtr) {
-        if (pickedObject) {
+        if (currentState != State::Idle) {
 
             auto obj = pickedObject;
 
@@ -85,10 +89,46 @@ void  ObjectManipulationManager::CameraHook::thunk(void*, RE::TESObjectREFR** re
                 obj->Update3DPosition(true);
 
                 if (Utils::DistanceBetweenTwoPoints(camera->pos, pos) < 1000) {
+                    currentState = (State)(currentState & ~State::Error);
+                    currentState = (State)(currentState | State::Valid);
                     ApplyShader(State::Valid);
                 } else {
+                    currentState = (State)(currentState & ~State::Valid);
+                    currentState = (State)(currentState | State::Error);
                     ApplyShader(State::Error);
                 }
             });
         }
+}
+
+void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
+                                                             RE::InputEvent* const* a_event) {
+    if (currentState != State::Idle) {
+        bool suppress = false;
+        for (auto current = *a_event; current; current = current->next) {
+            if (auto button = current->AsButtonEvent()) {
+
+                if (button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
+                    switch (auto key = static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode())) {
+                        case RE::BSWin32MouseDevice::Key::kWheelUp:
+                        case RE::BSWin32MouseDevice::Key::kWheelDown:
+                            break;
+                        default:
+                            if (RE::BSWin32MouseDevice::Key::kLeftButton == key) {
+                                suppress = true;
+                                Release();
+                            }
+                            break;
+                    }
+            
+                }
+            }
+        }
+    }
+
+    originalFunction(a_dispatcher, a_event);
+
+
+
+
 }
