@@ -5,5 +5,6 @@ set(HEADER_FILES
 	include/UI.h
 	include/Plugin.h
 	include/HookBuilder.h
-	include/UselessFenixUtils.h
+	include/ObjectManipulationManager.h
+	include/Utils.h
 )
