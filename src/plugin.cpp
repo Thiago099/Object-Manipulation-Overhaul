@@ -1,28 +1,30 @@
 #include "Plugin.h"
 
-RE::TESObjectREFR* cheese;
+#define M_PI 3.14159265358979323846
 
-void MoveObjectTo(
-        RE::TESObjectREFR* ref,
-        const RE::ObjectRefHandle& handle,
-        RE::TESObjectCELL* a_targetCell,
-        RE::TESWorldSpace* a_selfWorldSpace,
-        const RE::NiPoint3& a_position,
-        const RE::NiPoint3& a_rotation
-    ) {
+RE::TESObjectREFR* cheese;
+void SetPosition(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position) {
     if (!ref) {
         return;
     }
-    using func_t = void(RE::TESObjectREFR*,const RE::ObjectRefHandle&, RE::TESObjectCELL*, RE::TESWorldSpace*, const RE::NiPoint3&, const RE::NiPoint3&);
-        REL::Relocation<func_t> func{RE::Offset::TESObjectREFR::MoveTo};
-    return func(ref, handle, a_targetCell, a_selfWorldSpace, a_position, a_rotation);
+    using func_t = void(RE::TESObjectREFR*, const RE::NiPoint3&);
+    REL::Relocation<func_t> func{RELOCATION_ID(19363, 19790)};
+    return func(ref, a_position);
+}
+void SetAngle(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position) {
+    if (!ref) {
+        return;
+    }
+    using func_t = void(RE::TESObjectREFR*, const RE::NiPoint3&);
+    REL::Relocation<func_t> func{RELOCATION_ID(19359, 19786)};
+    return func(ref, a_position);
 }
 
 void OnMessage(SKSE::MessagingInterface::Message* message) {
     if (message->type == SKSE::MessagingInterface::kDataLoaded) {
     }
     if (message->type == SKSE::MessagingInterface::kPostLoadGame || message->type == SKSE::MessagingInterface::kNewGame) {
-        auto cheeseBase = RE::TESForm::LookupByID<RE::TESBoundObject>(0x64B33);
+        auto cheeseBase = RE::TESForm::LookupByID<RE::TESBoundObject>(0x15bab);
         auto cheeseRef = RE::PlayerCharacter::GetSingleton()->PlaceObjectAtMe(cheeseBase, true);
         cheese = cheeseRef.get();
     }
@@ -36,9 +38,6 @@ struct CameraHook {
             auto firstPerson = reinterpret_cast<RE::FirstPersonState*>(camera->cameraStates[RE::CameraState::kFirstPerson].get());
             auto player = RE::PlayerCharacter::GetSingleton();
   
-                //logger::info("pos: x: {},y: {},x:{}", thirdPerson->rotation.x, thirdPerson->rotation.y,
-                //         thirdPerson->rotation.z);
-
             RE::NiQuaternion rotation;
             if (camera->currentState.get()->id == RE::CameraState::kFirstPerson) {
                 firstPerson->GetRotation(rotation);
@@ -50,10 +49,15 @@ struct CameraHook {
             auto pos = raycast(player, rotation, camera->pos);
   
             auto c = cheese;
-            logger::info("pos: x: {},y: {},x:{}", pos.x, pos.y, pos.z);
-            SKSE::GetTaskInterface()->AddTask([c, player, pos]() {
-                MoveObjectTo(c, c->GetHandle(), player->GetParentCell(), player->GetWorldspace(), pos,
-                            RE::NiPoint3(0, 0, 0));
+            c->formFlags |= RE::TESObjectREFR::RecordFlags::kCollisionsDisabled;
+            SKSE::GetTaskInterface()->AddTask([c, player, pos, camera]() {
+                SetPosition(c, pos);
+                SetAngle(c,
+                         RE::NiPoint3(0, 0,
+                                      std::atan2(camera->pos.x - pos.x,
+                                                 camera->pos.y - pos.y)+M_PI));
+                c->Update3DPosition(true);
+
             });
 
         }
