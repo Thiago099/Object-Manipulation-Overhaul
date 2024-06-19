@@ -28,7 +28,9 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         auto cheeseRef = RE::PlayerCharacter::GetSingleton()->PlaceObjectAtMe(cheeseBase, true);
         cheese = cheeseRef.get();
         auto c = cheese;
-        auto shader = RE::TESForm::LookupByID<RE::TESEffectShader>(0x11000800);
+        const auto dataHandler = RE::TESDataHandler::GetSingleton();
+        auto formId = dataHandler->LookupFormID(0x800, "FX.esp");
+        auto shader = RE::TESForm::LookupByID<RE::TESEffectShader>(formId);
         SKSE::GetTaskInterface()->AddTask([c, shader]() {
             c->ApplyEffectShader(shader);
         });
