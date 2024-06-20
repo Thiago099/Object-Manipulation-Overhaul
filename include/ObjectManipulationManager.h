@@ -5,25 +5,27 @@
 
 class ObjectManipulationManager {
 
-    enum State {
-        Idle,
-        Active = 1 << 0,
-        Valid = 1 << 1,
-        Error = 1 << 2,
-        Warn = 1 << 3
+    enum ValidState {
+        None,
+        Valid,
+        Error,
+        Warn,
     };
 
-    static inline std::map<State, RE::TESEffectShader*> shaders;
+    enum MonitorState {
+        Idle,
+        Running
+    };
+
+    static inline std::map<ValidState, RE::TESEffectShader*> shaders;
 
     static inline RE::TESObjectREFR* pickedObject;
-    static inline RE::ShaderReferenceEffect* shaderRef;
-    static inline State currentState = State::Idle;
+    static inline ValidState currentState = ValidState::None;
+    static inline MonitorState monitorState = MonitorState::Idle;
     static inline bool pickedObjectHasCollison = false;
 
-    static void ApplyShader(State id);
+    static void SetPlacementState(ValidState id);
 
-    static void CleanShader();
-    
     struct CameraHook {
         static void thunk(void*, RE::TESObjectREFR** refPtr);
         static inline REL::Relocation<decltype(thunk)> originalFunction;

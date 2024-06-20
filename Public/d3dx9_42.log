@@ -1,0 +1,4 @@
+skse64 plugin preloader - d3dx9_42
+exe path: E:\Program Files\Skyrim Special Edition\CreationKit.exe
+loaded into an unrecognized exe, proxying d3dx9_42 but not registering hooks
+success

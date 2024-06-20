@@ -100,6 +100,17 @@ void Utils::SetAngle(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position) {
     return func(ref, a_position);
 }
 
+void Utils::StopVisualEffect(RE::TESEffectShader* e, RE::TESObjectREFR* r) {
+    if (r == nullptr) {
+        return;
+    }
+    using func_t = void(uint64_t,uint32_t,RE::TESEffectShader*,RE::TESObjectREFR*);
+    REL::Relocation<func_t> func{RELOCATION_ID(54659, 55309)};
+    return func(0, 0, e, r);
+}
+
+
+
 float Utils::DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b){
     double dx = b.x - a.x;
     double dy = b.y - a.y;
