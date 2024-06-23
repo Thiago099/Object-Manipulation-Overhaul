@@ -40,15 +40,8 @@ void ObjectManipulationManager::CreatePlaceholder() {
                          .get()
                          .get();
 
+    Utils::CallPapyrusAction(placeholderRef, "OM_MarkerScript", "SetValid");
 
-        
-        //auto obj = placeholderRef;
-    //SKSE::GetTaskInterface()->AddTask([obj]() {
-    //    placeholderRef->Get3D()->SetCollisionLayer(RE::COL_LAYER::kNonCollidable);
-    //    placeholderRef->Set3D(placeholderRef->Get3D(), true);
-    //    placeholderRef->Disable();
-    //    placeholderRef->Enable(false);
-    //});
 }
 
 
@@ -214,7 +207,13 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
                 if (button->IsDown() && button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
                     if (static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode()) ==
                         RE::BSWin32MouseDevice::Key::kMiddleButton) {
-                        SKSE::GetTaskInterface()->AddTask([]() { Utils::PickObject();
+                        SKSE::GetTaskInterface()->AddTask([]() {
+
+                            auto a = Utils::PickObject();
+                            if (a) {
+                                logger::trace("ID: {:x}, Name:{}", a->GetBaseObject()->formID,
+                                              a->GetBaseObject()->GetName());
+                            }
                         });
                     }
                 }

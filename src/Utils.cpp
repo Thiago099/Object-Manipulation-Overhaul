@@ -114,11 +114,13 @@ RE::TESObjectREFR* Utils::PickObject() {
     auto [cam, pos] = PlayerCameraRay();
     float min = std::numeric_limits<float>::max();
     RE::TESObjectREFR* result = nullptr;
-/*    auto cells = RE::TESDataHandler::GetSingleton()->objectList;
-    for(auto playerCell : cells) {
-        for (auto& refPtr : playerCell->GetRuntimeData().references) {
-            if (refPtr) {
-                auto ref = refPtr.get();
+    auto player = RE::PlayerCharacter::GetSingleton();
+    auto wordspace = player->GetWorldspace();
+    auto playerCell = player->GetParentCell();
+
+    if (wordspace) {
+        for (auto [key, cell] : wordspace->cellMap) {
+            for (auto ref : cell->GetRuntimeData().objectList) {
                 if (ref) {
                     auto dist = pointDistance(ref->GetPosition(), pos);
                     if (dist < min) {
@@ -128,7 +130,20 @@ RE::TESObjectREFR* Utils::PickObject() {
                 }
             }
         }
-    }*/
+    }
+    else if(playerCell)
+    {
+        for (auto ref : playerCell->GetRuntimeData().objectList) {
+            if (ref) {
+                auto dist = pointDistance(ref->GetPosition(), pos);
+                if (dist < min) {
+                    min = dist;
+                    result = ref;
+                }
+            }
+        }
+    }
+   
     return result;
 }
 
