@@ -136,8 +136,12 @@ void  ObjectManipulationManager::CameraHook::thunk(void*, RE::TESObjectREFR** re
 void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
                                                              RE::InputEvent* const* a_event) {
     if (currentState != MonitorState::Idle) {
-        bool suppress = false;
+
+        auto first = *a_event;
+        auto last = *a_event;
+        size_t length = 0;
         for (auto current = *a_event; current; current = current->next) {
+            bool suppress = false;
             if (auto button = current->AsButtonEvent()) {
 
                 if (button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
@@ -157,10 +161,33 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
             
                 }
             }
+            if (suppress) {
+                if (current != last) {
+                    last->next = current;
+                } else {
+                    last = current;
+                    first = current;
+                }
+            } else {
+                ++length;
+            }
+            last = current;
         }
+        if (length == 0) {
+            constexpr RE::InputEvent* const dummy[] = {nullptr};
+            originalFunction(a_dispatcher, dummy);
+        } else {
+            size_t i = 0;
+            RE::InputEvent** result = new RE::InputEvent*[length];
+            for (auto current = first; current; current = current->next) {
+                result[i] = current;
+                ++i;
+            }
+            originalFunction(a_dispatcher, const_cast<RE::InputEvent* const*>(result));
+        }
+    } else {
+        originalFunction(a_dispatcher, a_event);
     }
-
-    originalFunction(a_dispatcher, a_event);
 
 
 
