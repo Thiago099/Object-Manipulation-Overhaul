@@ -22,7 +22,7 @@ class ObjectManipulationManager {
     static inline RE::TESObjectREFR* placeholderRef;
     static inline RE::TESObjectACTI* placeholder;
 
-    static inline RE::TESForm* pickObject;
+    static inline RE::TESObjectREFR* pickObject;
     static inline ValidState currentState = ValidState::None;
     static inline MonitorState monitorState = MonitorState::Idle;
     static inline bool pickedObjectHasCollison = false;
@@ -46,7 +46,7 @@ class ObjectManipulationManager {
 
    static void Install();
 
-   static void Pick(RE::TESForm* obj);
+   static void Pick(RE::TESObjectREFR* obj);
    static void Cancel();
    static void Release();
 

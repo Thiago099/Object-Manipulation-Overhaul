@@ -20,18 +20,9 @@ void ObjectManipulationManager::SetPlacementState(ValidState id) {
         }
     }
 }
-void MoveHavok(RE::TESObjectREFR* ref) {
-    if (!ref) {
-        return;
-    }
-    using func_t = uint32_t(RE::TESObjectREFR*, uint8_t);
-    REL::Relocation<func_t> func{RELOCATION_ID(19367, 19794)};
-    func(ref, 1);
-}
+
 void ObjectManipulationManager::CreatePlaceholder() {
-    const auto dataHandler = RE::TESDataHandler::GetSingleton();
-    auto placeholderFormId = dataHandler->LookupFormID(0x803, "ObjectManipulator.esp");
-    placeholder = RE::TESForm::LookupByID<RE::TESObjectACTI>(placeholderFormId);
+
     auto player = RE::PlayerCharacter::GetSingleton();
     placeholderRef = RE::TESDataHandler::GetSingleton()
                          ->CreateReferenceAtLocation(placeholder, player->GetPosition(), RE::NiPoint3(0, 0, 0),
@@ -56,20 +47,36 @@ void ObjectManipulationManager::Install() {
     builder->AddCall<CameraHook, 5, 14>(49852, 0x50, 50784, 0x54);
     builder->AddCall<ProcessInputQueueHook, 5, 14>(67315, 0x7B, 68617, 0x7B, 0xC519E0, 0x81);
     builder->Install();
+
+    const auto dataHandler = RE::TESDataHandler::GetSingleton();
+    auto placeholderFormId = dataHandler->LookupFormID(0x803, "ObjectManipulator.esp");
+    placeholder = RE::TESForm::LookupByID<RE::TESObjectACTI>(placeholderFormId);
+
     delete builder;
 }
 
 
-void ObjectManipulationManager::Pick(RE::TESForm* baseObject) {
+void ObjectManipulationManager::Pick(RE::TESObjectREFR* baseObject) {
     if (baseObject) {
+        auto baseObj = baseObject->GetBaseObject();
+        if (!baseObj) {
+            return;
+        }
+        auto modelBase = baseObj->As<RE::TESModel>();
+        if (!modelBase) {
+            return;
+        }
+        placeholder->SetModel(modelBase->GetModel());
         CreatePlaceholder();
         if (!placeholderRef) {
             return;
         }
         angleOffset = M_PI;
         pickObject = baseObject;
-        placeholder->SetModel(baseObject->As<RE::TESModel>()->GetModel());
         monitorState = MonitorState::Running;
+        pickObject->Disable();
+        auto obj = pickObject;
+
     }
 }
 
@@ -78,13 +85,15 @@ void ObjectManipulationManager::Cancel() {
         monitorState = MonitorState::Idle;
         currentState = ValidState::None;
         Utils::CallPapyrusAction(placeholderRef, "OM_MarkerScript", "Destroy");
+        pickObject->Enable(false);
     }
 }
 void ObjectManipulationManager::Release() {
     if (placeholderRef) {
         monitorState = MonitorState::Idle;
         currentState = ValidState::None;
-        placeholderRef->PlaceObjectAtMe(pickObject->As<RE::TESBoundObject>(), true);
+        pickObject->Enable(false);
+        pickObject->MoveTo(placeholderRef);
         Utils::CallPapyrusAction(placeholderRef, "OM_MarkerScript", "Destroy");
 
     }
@@ -210,7 +219,7 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
                         SKSE::GetTaskInterface()->AddTask([]() { 
                         
                             if (auto ref = Utils::PlayerCameraRayRefr()) {
-                                logger::info("Name: {}, Id: {:x}", ref->GetName(), ref->GetBaseObject()->GetFormID());
+                                Pick(ref);
                             }
                         });
 
