@@ -164,7 +164,6 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
 
                 if (button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
 
-                    logger::trace("key: {}", button->GetIDCode());
 
                     switch (auto key = static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode())) {
                         case RE::BSWin32MouseDevice::Key::kWheelUp:
@@ -188,20 +187,19 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
                             }
                             break;
                     }
-            
                 }
             }
             if (suppress) {
                 if (current != last) {
-                    last->next = current;
+                    last->next = current->next;
                 } else {
-                    last = current;
-                    first = current;
+                    last = current->next;
+                    first = current->next;
                 }
             } else {
+                last = current;
                 ++length;
             }
-            last = current;
         }
         if (length == 0) {
             constexpr RE::InputEvent* const dummy[] = {nullptr};
