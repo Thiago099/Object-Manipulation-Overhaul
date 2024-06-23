@@ -207,14 +207,8 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
                 if (button->IsDown() && button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
                     if (static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode()) ==
                         RE::BSWin32MouseDevice::Key::kMiddleButton) {
-                        SKSE::GetTaskInterface()->AddTask([]() {
+                        SKSE::GetTaskInterface()->AddTask([]() { Utils::PlayerCameraRay(); });
 
-                            auto a = Utils::PickObject();
-                            if (a) {
-                                logger::trace("ID: {:x}, Name:{}", a->GetBaseObject()->formID,
-                                              a->GetBaseObject()->GetName());
-                            }
-                        });
                     }
                 }
 

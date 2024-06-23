@@ -12,6 +12,7 @@
     "directxmath",
     "directxtk",
     "boost-stl-interfaces",
+    "glm",
     "clib-util"
   ],
   "overrides": [

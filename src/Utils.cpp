@@ -80,7 +80,7 @@ std::pair<RE::NiPoint3, RE::NiPoint3> Utils::PlayerCameraRay() {
     }
     auto player = RE::PlayerCharacter::GetSingleton();
 
-    auto pos = Utils::Raycast(player, rotation, camera->pos);
+    auto pos = Utils::Raycast2(player, rotation, camera->pos);
 
     return std::pair<RE::NiPoint3, RE::NiPoint3>(camera->pos, pos);
 }
@@ -101,6 +101,8 @@ RE::NiPoint3 Utils::Raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoi
 
     caster->GetParentCell()->GetbhkWorld()->PickObject(pick_data);
 
+
+
     RE::NiPoint3 hitpos;
     if (pick_data.rayOutput.HasHit()) {
         hitpos = ray_start + (ray_end - ray_start) * pick_data.rayOutput.hitFraction;
@@ -110,41 +112,105 @@ RE::NiPoint3 Utils::Raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoi
     return hitpos;
 }
 
-RE::TESObjectREFR* Utils::PickObject() {
-    auto [cam, pos] = PlayerCameraRay();
-    float min = std::numeric_limits<float>::max();
-    RE::TESObjectREFR* result = nullptr;
-    auto player = RE::PlayerCharacter::GetSingleton();
-    auto wordspace = player->GetWorldspace();
-    auto playerCell = player->GetParentCell();
+RE::NiPoint3 Utils::Raycast2(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position) {
+    auto havokWorldScale = RE::bhkWorld::GetWorldScale();
+    RE::bhkPickData pick_data;
+    RE::NiPoint3 ray_start, ray_end;
 
-    if (wordspace) {
-        for (auto [key, cell] : wordspace->cellMap) {
-            for (auto ref : cell->GetRuntimeData().objectList) {
-                if (ref) {
-                    auto dist = pointDistance(ref->GetPosition(), pos);
-                    if (dist < min) {
-                        min = dist;
-                        result = ref;
-                    }
-                }
-            }
+    ray_start = position;
+    ray_end = ray_start + rotate(2000000000, QuaternionToEuler(angle));
+    pick_data.rayInput.from = ray_start * havokWorldScale;
+    pick_data.rayInput.to = ray_end * havokWorldScale;
+
+    auto dif = ray_start - ray_end;
+
+    auto collector = Utils::RayCollector();
+    collector.Reset();
+    pick_data.rayHitCollectorA8 = reinterpret_cast<RE::hkpClosestRayHitCollector*>(&collector);
+
+	const auto ply = RE::PlayerCharacter::GetSingleton();
+    if (!ply->parentCell) return {};
+
+    if (ply->loadedData && ply->loadedData->data3D) collector.AddFilter(ply->loadedData->data3D.get());
+
+    auto physicsWorld = ply->parentCell->GetbhkWorld();
+    if (physicsWorld) {
+        physicsWorld->PickObject(pick_data);
+    }
+
+
+    RayCollector::HitResult best = {};
+    best.hitFraction = 1.0f;
+    RE::NiPoint3 bestPos = {};
+
+    for (auto& hit : collector.GetHits()) {
+        const auto pos = (dif * hit.hitFraction) + ray_start;
+        if (best.body == nullptr) {
+            best = hit;
+            bestPos = pos;
+            continue;
+        }
+
+        if (hit.hitFraction < best.hitFraction) {
+            best = hit;
+            bestPos = pos;
         }
     }
-    else if(playerCell)
-    {
-        for (auto ref : playerCell->GetRuntimeData().objectList) {
-            if (ref) {
-                auto dist = pointDistance(ref->GetPosition(), pos);
-                if (dist < min) {
-                    min = dist;
-                    result = ref;
-                }
-            }
+
+    if (!best.body) return {};
+    auto av = best.getAVObject();
+
+    if (av) {
+        auto ref = av->GetUserData();
+        if (ref && ref->formType == RE::FormType::ActorCharacter) {
+            logger::info("{}",reinterpret_cast<RE::Character*>(ref)->GetName());
+
         }
     }
-   
-    return result;
+    return {};
+}
+
+RE::TESObjectREFR* Utils::PickObject() {
+    // auto [cam, pos] = PlayerCameraRay();
+    // float min = std::numeric_limits<float>::max();
+    // RE::TESObjectREFR* result = nullptr;
+    // auto player = RE::PlayerCharacter::GetSingleton();
+    // auto wordspace = player->GetWorldspace();
+    // auto playerCell = player->GetParentCell();
+
+    // if (wordspace) {
+    //     for (auto [key, cell] : wordspace->cellMap) {
+    //         for (auto refPtr : cell->GetRuntimeData().references) {
+    //             if (refPtr) {
+    //                 if (auto ref = refPtr.get()) {
+    //                     auto dist = pointDistance(ref->GetPosition(), pos);
+    //                     if (dist < min) {
+    //                         min = dist;
+    //                         result = ref;
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+    // else if(playerCell)
+    //{
+    //     for (auto refPtr : playerCell->GetRuntimeData().references) {
+    //         if (refPtr) {
+    //             if (auto ref = refPtr.get()) {
+    //                 logger::info("{}",ref->GetBaseObject()->GetFormType());
+    //                 auto dist = pointDistance(ref->GetPosition(), pos);
+    //                 if (dist < min) {
+    //                     min = dist;
+    //                     result = ref;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+
+    // return result;
+    return nullptr;
 }
 
 void Utils::SetPosition(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position) {
@@ -165,23 +231,18 @@ void Utils::SetAngle(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position) {
     return func(ref, a_position);
 }
 
-
-
-
 REL::Relocation<void*> singleton{RELOCATION_ID(514167, 400315)};
 
 void Utils::StopVisualEffect(RE::TESObjectREFR* r, void* ptr) {
     if (r == nullptr) {
         return;
     }
-    using func_t = void(void*,RE::TESObjectREFR*,void*);
+    using func_t = void(void*, RE::TESObjectREFR*, void*);
     REL::Relocation<func_t> func{RELOCATION_ID(40381, 41395)};
     return func(singleton.get(), r, ptr);
 }
 
-
-
-float Utils::DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b){
+float Utils::DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b) {
     double dx = b.x - a.x;
     double dy = b.y - a.y;
     double dz = b.z - a.z;
@@ -195,7 +256,81 @@ void Utils::CallPapyrusAction(RE::TESObjectREFR* obj, const char* className, con
     RE::VMHandle handle = handlePolicy->GetHandleForObject(RE::FormType::Reference, obj);
     auto callback = RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor>();
     bool success =
-        vm->DispatchMethodCall(handle, RE::BSFixedString(className), RE::BSFixedString(methodName),
-                                          args, callback);
+        vm->DispatchMethodCall(handle, RE::BSFixedString(className), RE::BSFixedString(methodName), args, callback);
     handlePolicy->ReleaseHandle(handle);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Utils::RayCollector::RayCollector() {}
+
+void Utils::RayCollector::AddRayHit(const RE::hkpCdBody& body, const RE::hkpShapeRayCastCollectorOutput& hitInfo) {
+    HitResult hit;
+    hit.hitFraction = hitInfo.hitFraction;
+    hit.normal = {hitInfo.normal.quad.m128_f32[0], hitInfo.normal.quad.m128_f32[1], hitInfo.normal.quad.m128_f32[2]};
+
+    const RE::hkpCdBody* obj = &body;
+    while (obj) {
+        if (!obj->parent) break;
+        obj = obj->parent;
+    }
+
+    hit.body = obj;
+    if (!hit.body) return;
+
+    const auto collisionObj = static_cast<const RE::hkpCollidable*>(hit.body);
+    const auto flags = collisionObj->broadPhaseHandle.collisionFilterInfo;
+
+    const uint64_t m = 1ULL << static_cast<uint64_t>(flags);
+    constexpr uint64_t filter = 0x40122716;  //@TODO
+    if ((m & filter) != 0) {
+        if (objectFilter.size() > 0) {
+            for (const auto filteredObj : objectFilter) {
+                if (hit.getAVObject() == filteredObj) return;
+            }
+        }
+
+        earlyOutHitFraction = hit.hitFraction;
+        hits.push_back(std::move(hit));
+    }
+}
+
+const std::vector<Utils::RayCollector::HitResult>& Utils::RayCollector::GetHits() { return hits; }
+
+void Utils::RayCollector::Reset() {
+    earlyOutHitFraction = 1.0f;
+    hits.clear();
+    objectFilter.clear();
+}
+
+RE::NiAVObject* Utils::RayCollector::HitResult::getAVObject() {
+    typedef RE::NiAVObject* (*_GetUserData)(const RE::hkpCdBody*);
+    static auto getAVObject = REL::Relocation<_GetUserData>(RELOCATION_ID(76160, 77988));
+    return body ? getAVObject(body) : nullptr;
+}
+
+
