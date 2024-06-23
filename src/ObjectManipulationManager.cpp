@@ -38,10 +38,6 @@ void ObjectManipulationManager::CreatePlaceholder() {
                          .get();
 }
 
-void ObjectManipulationManager::DestroyPlaceholder() { 
-    placeholderRef->SetDelete(true);
-}
-
 
 RE::TESEffectShader* LookUpShader(uint32_t id) {
     const auto dataHandler = RE::TESDataHandler::GetSingleton();
@@ -71,6 +67,13 @@ void ObjectManipulationManager::Pick(RE::TESForm* baseObject) {
 
 }
 
+void ObjectManipulationManager::Cancel() {
+    if (placeholderRef) {
+        monitorState = MonitorState::Idle;
+        currentState = ValidState::None;
+        Utils::CallPapyrusAction(placeholderRef, "OM_MarkerScript", "Destroy");
+    }
+}
 void ObjectManipulationManager::Release() {
     if (placeholderRef) {
         monitorState = MonitorState::Idle;
@@ -150,7 +153,11 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
                         case RE::BSWin32MouseDevice::Key::kWheelDown:
                             break;
                         default:
-                            if (RE::BSWin32MouseDevice::Key::kLeftButton == key) {
+                            if (RE::BSWin32MouseDevice::Key::kRightButton == key) {
+                                suppress = true;
+                                Cancel();
+                            }
+                            else if (RE::BSWin32MouseDevice::Key::kLeftButton == key) {
                                 suppress = true;
                                 if (currentState == ValidState::Valid) {
                                     Release();

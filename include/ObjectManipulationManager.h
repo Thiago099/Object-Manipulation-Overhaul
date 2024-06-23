@@ -31,8 +31,6 @@ class ObjectManipulationManager {
 
     static void CreatePlaceholder();
 
-    static void DestroyPlaceholder();
-
     struct CameraHook {
         static void thunk(void*, RE::TESObjectREFR** refPtr);
         static inline REL::Relocation<decltype(thunk)> originalFunction;
@@ -47,6 +45,7 @@ class ObjectManipulationManager {
    static void Install();
 
    static void Pick(RE::TESForm* obj);
+   static void Cancel();
    static void Release();
 
    static void UpdatePlaceholderPosition();
