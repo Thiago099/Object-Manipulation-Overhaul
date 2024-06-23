@@ -74,6 +74,17 @@ void ObjectManipulationManager::Pick(RE::TESObjectREFR* baseObject) {
         angleOffset = M_PI;
         pickObject = baseObject;
         monitorState = MonitorState::Running;
+
+        //RE::hkVector4 pcml;
+        //RE::hkVector4 pcmw;
+        //pickObject->Get3D()->AsBhkRigidBody()->GetCenterOfMassLocal(pcml);
+        //pickObject->Get3D()->AsBhkRigidBody()->GetCenterOfMassWorld(pcmw);
+        //RE::hkVector4 ocml;
+        //RE::hkVector4 ocmw;
+        //pickObject->Get3D()->AsBhkRigidBody()->GetCenterOfMassLocal(ocml);
+        //pickObject->Get3D()->AsBhkRigidBody()->GetCenterOfMassWorld(ocmw);
+
+        //ocml,
         pickObject->Disable();
         auto obj = pickObject;
 
@@ -92,10 +103,19 @@ void ObjectManipulationManager::Release() {
     if (placeholderRef) {
         monitorState = MonitorState::Idle;
         currentState = ValidState::None;
-        pickObject->Enable(false);
-        pickObject->MoveTo(placeholderRef);
-        Utils::CallPapyrusAction(placeholderRef, "OM_MarkerScript", "Destroy");
 
+        MoveTo_Impl(pickObject, RE::ObjectRefHandle(), placeholderRef->GetParentCell(),
+                    placeholderRef->GetWorldspace(), placeholderRef->GetPosition(), placeholderRef->GetAngle());
+
+        pickObject->Enable(false);
+
+        //auto position = pickObject->GetPosition();
+        //position.z = 0.f;
+        //Utils::SetPosition(pickObject, position);
+        //pickObject->Update3DPosition(true);
+
+
+        Utils::CallPapyrusAction(placeholderRef, "OM_MarkerScript", "Destroy");
     }
 
 }
@@ -104,11 +124,11 @@ void ObjectManipulationManager::UpdatePlaceholderPosition() {
     auto player = RE::PlayerCharacter::GetSingleton();
     if (placeholderRef->GetWorldspace() != player->GetWorldspace() ||
         placeholderRef->GetParentCell() != player->GetParentCell()) {
-        MoveTo_Impl(placeholderRef, player->GetHandle(), player->GetParentCell(), player->GetWorldspace(),
+        MoveTo_Impl(placeholderRef, RE::ObjectRefHandle(), player->GetParentCell(),
+                    player->GetWorldspace(),
                     player->GetPosition(), placeholderRef->GetAngle());
     }
 }
-
 void ObjectManipulationManager::Update() {
     auto obj = placeholderRef;
 
@@ -119,6 +139,9 @@ void ObjectManipulationManager::Update() {
 
     SKSE::GetTaskInterface()->AddTask([obj]() {
         auto [cameraPosition, rayPostion] = Utils::PlayerCameraRayPos();
+
+
+
 
         UpdatePlaceholderPosition();
         Utils::SetPosition(obj, rayPostion);
@@ -132,6 +155,10 @@ void ObjectManipulationManager::Update() {
         } else {
             SetPlacementState(ValidState::Error);
         }
+
+        //logger::info("Water: {}, name: {}", obj->IsInWater(),
+        //                 RE::TES::GetSingleton()->GetLandTexture(rayPostion)->materialType->materialName);
+        
     });
 }
 
