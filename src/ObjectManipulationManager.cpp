@@ -76,8 +76,8 @@ void ObjectManipulationManager::Release() {
         monitorState = MonitorState::Idle;
         currentState = ValidState::None;
         placeholderRef->PlaceObjectAtMe(pickObject->As<RE::TESBoundObject>(), true);
-        placeholderRef->Disable();
-        RE::free(placeholderRef);
+        Utils::CallPapyrusAction(placeholderRef, "OM_MarkerScript", "Destroy");
+
     }
 
 }

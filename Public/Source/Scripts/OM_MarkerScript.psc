@@ -14,3 +14,8 @@ Function SetError()
 	OM_Valid.stop(self)
 	OM_Error.play(self)
 EndFunction
+
+
+Function Destroy()
+	self.Delete()
+EndFunction
