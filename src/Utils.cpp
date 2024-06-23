@@ -91,6 +91,7 @@ void Utils::SetPosition(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position) 
     REL::Relocation<func_t> func{RELOCATION_ID(19363, 19790)};
     return func(ref, a_position);
 }
+
 void Utils::SetAngle(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position) {
     if (!ref) {
         return;
@@ -100,13 +101,18 @@ void Utils::SetAngle(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position) {
     return func(ref, a_position);
 }
 
-void Utils::StopVisualEffect(RE::TESEffectShader* e, RE::TESObjectREFR* r) {
+
+
+
+REL::Relocation<void*> singleton{RELOCATION_ID(514167, 400315)};
+
+void Utils::StopVisualEffect(RE::TESObjectREFR* r, void* ptr) {
     if (r == nullptr) {
         return;
     }
-    using func_t = void(uint64_t,uint32_t,RE::TESEffectShader*,RE::TESObjectREFR*);
-    REL::Relocation<func_t> func{RELOCATION_ID(54659, 55309)};
-    return func(0, 0, e, r);
+    using func_t = void(void*,RE::TESObjectREFR*,void*);
+    REL::Relocation<func_t> func{RELOCATION_ID(40381, 41395)};
+    return func(singleton.get(), r, ptr);
 }
 
 
@@ -116,4 +122,16 @@ float Utils::DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b){
     double dy = b.y - a.y;
     double dz = b.z - a.z;
     return std::sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+void Utils::CallPapyrusAction(RE::TESObjectREFR* obj, const char* className, const char* methodName) {
+    auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+    auto handlePolicy = vm->GetObjectHandlePolicy();
+    auto args = RE::MakeFunctionArguments();
+    RE::VMHandle handle = handlePolicy->GetHandleForObject(RE::FormType::Reference, obj);
+    auto callback = RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor>();
+    bool success =
+        vm->DispatchMethodCall(handle, RE::BSFixedString(className), RE::BSFixedString(methodName),
+                                          args, callback);
+    handlePolicy->ReleaseHandle(handle);
 }

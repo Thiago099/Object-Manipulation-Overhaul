@@ -19,12 +19,19 @@ class ObjectManipulationManager {
 
     static inline std::map<ValidState, RE::TESEffectShader*> shaders;
 
-    static inline RE::TESObjectREFR* pickedObject;
+    static inline RE::TESObjectREFR* placeholderRef;
+    static inline RE::TESObjectACTI* placeholder;
+
+    static inline RE::TESForm* pickObject;
     static inline ValidState currentState = ValidState::None;
     static inline MonitorState monitorState = MonitorState::Idle;
     static inline bool pickedObjectHasCollison = false;
 
     static void SetPlacementState(ValidState id);
+
+    static void CreatePlaceholder();
+
+    static void DestroyPlaceholder();
 
     struct CameraHook {
         static void thunk(void*, RE::TESObjectREFR** refPtr);
@@ -39,8 +46,10 @@ class ObjectManipulationManager {
 
    static void Install();
 
-    static void Pick(RE::TESObjectREFR* obj);
-    static void Release();
+   static void Pick(RE::TESForm* obj);
+   static void Release();
+
+   static void UpdatePlaceholderPosition();
 
 
 };

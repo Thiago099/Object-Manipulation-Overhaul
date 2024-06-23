@@ -1,11 +1,45 @@
 #include "ObjectManipulationManager.h"
 
+
+void MoveTo_Impl(RE::TESObjectREFR* ref, const RE::ObjectRefHandle& a_targetHandle, RE::TESObjectCELL* a_targetCell,
+                 RE::TESWorldSpace* a_selfWorldSpace, const RE::NiPoint3& a_position, const RE::NiPoint3& a_rotation) {
+    using func_t = decltype(&MoveTo_Impl);
+    REL::Relocation<func_t> func{RE::Offset::TESObjectREFR::MoveTo};
+    return func(ref, a_targetHandle, a_targetCell, a_selfWorldSpace, a_position, a_rotation);
+}
+
+RE::NiPoint3 GetPlayerDummyPosition() {
+    auto player = RE::PlayerCharacter::GetSingleton();
+    return RE::NiPoint3(player->GetPositionX(), player->GetPositionY(), std::numeric_limits<float>::max());
+}
+
 void ObjectManipulationManager::SetPlacementState(ValidState id) {
     if (id != currentState) {
-        logger::trace("hello");
         currentState = id;
-        pickedObject->ApplyEffectShader(shaders[id],-1.0f,nullptr,false,true,nullptr,false);
+        if (currentState == ValidState::Valid) {
+            Utils::CallPapyrusAction(placeholderRef, "OM_MarkerScript", "SetValid");
+        
+        } else if (currentState == ValidState::Error) {
+            Utils::CallPapyrusAction(placeholderRef, "OM_MarkerScript", "SetError");
+        }
     }
+}
+
+void ObjectManipulationManager::CreatePlaceholder() {
+    const auto dataHandler = RE::TESDataHandler::GetSingleton();
+    auto placeholderFormId = dataHandler->LookupFormID(0x803, "ObjectManipulator.esp");
+    placeholder = RE::TESForm::LookupByID<RE::TESObjectACTI>(placeholderFormId);
+    auto player = RE::PlayerCharacter::GetSingleton();
+    placeholderRef = RE::TESDataHandler::GetSingleton()
+                         ->CreateReferenceAtLocation(placeholder, GetPlayerDummyPosition(), RE::NiPoint3(0, 0, 0),
+                                                     player->GetParentCell(), player->GetWorldspace(), nullptr, nullptr,
+                                                     RE::ObjectRefHandle(), true, true)
+                         .get()
+                         .get();
+}
+
+void ObjectManipulationManager::DestroyPlaceholder() { 
+    placeholderRef->SetDelete(true);
 }
 
 
@@ -19,45 +53,55 @@ void ObjectManipulationManager::Install() {
     auto builder = new HookBuilder();
     builder->AddCall<CameraHook, 5, 14>(49852, 0x50, 50784, 0x54);
     builder->AddCall<ProcessInputQueueHook, 5, 14>(67315, 0x7B, 68617, 0x7B, 0xC519E0, 0x81);
-
     builder->Install();
-
-    shaders[ValidState::Valid] = LookUpShader(0x800);
-    shaders[ValidState::Error] = LookUpShader(0x801);
-    shaders[ValidState::Warn] = LookUpShader(0x802);
-
     delete builder;
 }
 
-void ObjectManipulationManager::Pick(RE::TESObjectREFR* obj) {
-    if (obj) {
-        pickedObject = obj;
+
+void ObjectManipulationManager::Pick(RE::TESForm* baseObject) {
+    if (baseObject) {
+        CreatePlaceholder();
+        if (!placeholderRef) {
+            return;
+        }
+        pickObject = baseObject;
+        placeholder->SetModel(baseObject->As<RE::TESModel>()->GetModel());
         monitorState = MonitorState::Running;
     }
 
 }
 
 void ObjectManipulationManager::Release() {
-    if (pickedObject) {
+    if (placeholderRef) {
         monitorState = MonitorState::Idle;
         currentState = ValidState::None;
-        pickedObject->MoveTo(pickedObject);
-        pickedObject = nullptr;
+        placeholderRef->PlaceObjectAtMe(pickObject->As<RE::TESBoundObject>(), true);
+        placeholderRef->Disable();
+        RE::free(placeholderRef);
     }
 
 }
 
+void ObjectManipulationManager::UpdatePlaceholderPosition() {
+    auto player = RE::PlayerCharacter::GetSingleton();
+    if (placeholderRef->GetWorldspace() != player->GetWorldspace() ||
+        placeholderRef->GetParentCell() != player->GetParentCell()) {
+        MoveTo_Impl(placeholderRef, player->GetHandle(), player->GetParentCell(), player->GetWorldspace(),
+                    GetPlayerDummyPosition(), placeholderRef->GetAngle());
+    }
+}
+
+
 void  ObjectManipulationManager::CameraHook::thunk(void*, RE::TESObjectREFR** refPtr) {
     if (monitorState != MonitorState::Idle) {
 
-            auto obj = pickedObject;
+            auto obj = placeholderRef;
 
-                            RE::PlayerCamera* camera = RE::PlayerCamera::GetSingleton();
+            RE::PlayerCamera* camera = RE::PlayerCamera::GetSingleton();
             auto thirdPerson =
                 reinterpret_cast<RE::ThirdPersonState*>(camera->cameraStates[RE::CameraState::kThirdPerson].get());
             auto firstPerson =
                 reinterpret_cast<RE::FirstPersonState*>(camera->cameraStates[RE::CameraState::kFirstPerson].get());
-            auto player = RE::PlayerCharacter::GetSingleton();
 
             RE::NiQuaternion rotation;
             if (camera->currentState.get()->id == RE::CameraState::kFirstPerson) {
@@ -66,8 +110,12 @@ void  ObjectManipulationManager::CameraHook::thunk(void*, RE::TESObjectREFR** re
             if (camera->currentState.get()->id == RE::CameraState::kThirdPerson) {
                 rotation = thirdPerson->rotation;
             }
+            auto player = RE::PlayerCharacter::GetSingleton();
 
             auto pos = Utils::Raycast(player, rotation, camera->pos);
+
+            
+            UpdatePlaceholderPosition();
 
 
             SKSE::GetTaskInterface()->AddTask([obj,pos,camera]() {
@@ -76,6 +124,7 @@ void  ObjectManipulationManager::CameraHook::thunk(void*, RE::TESObjectREFR** re
                          RE::NiPoint3(0, 0, std::atan2(camera->pos.x - pos.x, camera->pos.y - pos.y) + M_PI));
                 obj->Update3DPosition(true);
             });
+
             if (Utils::DistanceBetweenTwoPoints(camera->pos, pos) < 1000) {
                 SetPlacementState(ValidState::Valid);
             } else {
