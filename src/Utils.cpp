@@ -56,7 +56,27 @@ RE::MagicTarget* FindPickTarget(RE::MagicCaster* caster, RE::NiPoint3& a_targetL
     REL::Relocation<func_t> func{RELOCATION_ID(33676, 34456)};
     return func(caster, a_targetLocation, a_targetCell, a_pickData);
 }
+std::pair<RE::NiPoint3, RE::NiPoint3> Utils::PlayerCameraRay() {
+    RE::PlayerCamera* camera = RE::PlayerCamera::GetSingleton();
+    auto thirdPerson =
+        reinterpret_cast<RE::ThirdPersonState*>(camera->cameraStates[RE::CameraState::kThirdPerson].get());
+    auto firstPerson =
+        reinterpret_cast<RE::FirstPersonState*>(camera->cameraStates[RE::CameraState::kFirstPerson].get());
 
+    RE::NiQuaternion rotation;
+    if (camera->currentState.get()->id == RE::CameraState::kFirstPerson) {
+        firstPerson->GetRotation(rotation);
+    } else if (camera->currentState.get()->id == RE::CameraState::kThirdPerson) {
+        rotation = thirdPerson->rotation;
+    } else {
+        return std::pair<RE::NiPoint3, RE::NiPoint3>();
+    }
+    auto player = RE::PlayerCharacter::GetSingleton();
+
+    auto pos = Utils::Raycast(player, rotation, camera->pos);
+
+    return std::pair<RE::NiPoint3, RE::NiPoint3>(camera->pos, pos);
+}
 RE::NiPoint3 Utils::Raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position) {
     auto havokWorldScale = RE::bhkWorld::GetWorldScale();
     RE::bhkPickData pick_data;

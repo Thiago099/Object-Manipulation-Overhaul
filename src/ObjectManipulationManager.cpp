@@ -102,37 +102,23 @@ void  ObjectManipulationManager::CameraHook::thunk(void* a1, RE::TESObjectREFR**
 
             auto obj = placeholderRef;
 
-            RE::PlayerCamera* camera = RE::PlayerCamera::GetSingleton();
-            auto thirdPerson =
-                reinterpret_cast<RE::ThirdPersonState*>(camera->cameraStates[RE::CameraState::kThirdPerson].get());
-            auto firstPerson =
-                reinterpret_cast<RE::FirstPersonState*>(camera->cameraStates[RE::CameraState::kFirstPerson].get());
-
-            RE::NiQuaternion rotation;
-            if (camera->currentState.get()->id == RE::CameraState::kFirstPerson) {
-                firstPerson->GetRotation(rotation);
-            }
-            else if (camera->currentState.get()->id == RE::CameraState::kThirdPerson) {
-                rotation = thirdPerson->rotation;
-            } else {
-                return;
-            }
-            auto player = RE::PlayerCharacter::GetSingleton();
-
-            auto pos = Utils::Raycast(player, rotation, camera->pos);
+            auto [cameraPosition, rayPostion] = Utils::PlayerCameraRay();
 
             
             UpdatePlaceholderPosition();
 
 
-            SKSE::GetTaskInterface()->AddTask([obj,pos,camera]() {
-                Utils::SetPosition(obj, pos);
+
+            SKSE::GetTaskInterface()->AddTask([obj, rayPostion, cameraPosition]() {
+                Utils::SetPosition(obj, rayPostion);
                 Utils::SetAngle(obj,
-                         RE::NiPoint3(0, 0, std::atan2(camera->pos.x - pos.x, camera->pos.y - pos.y) + angleOffset));
+                    RE::NiPoint3(0, 0,
+                                      std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) +
+                                          angleOffset));
                 obj->Update3DPosition(true);
             });
 
-            if (Utils::DistanceBetweenTwoPoints(camera->pos, pos) < 1000) {
+            if (Utils::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
                 SetPlacementState(ValidState::Valid);
             } else {
                 SetPlacementState(ValidState::Error);
