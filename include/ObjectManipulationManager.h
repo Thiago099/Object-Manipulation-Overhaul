@@ -27,6 +27,8 @@ class ObjectManipulationManager {
     static inline MonitorState monitorState = MonitorState::Idle;
     static inline bool pickedObjectHasCollison = false;
 
+    static inline float angleOffset = M_PI;
+
     static void SetPlacementState(ValidState id);
 
     static void CreatePlaceholder();

@@ -60,6 +60,7 @@ void ObjectManipulationManager::Pick(RE::TESForm* baseObject) {
         if (!placeholderRef) {
             return;
         }
+        angleOffset = M_PI;
         pickObject = baseObject;
         placeholder->SetModel(baseObject->As<RE::TESModel>()->GetModel());
         monitorState = MonitorState::Running;
@@ -95,7 +96,8 @@ void ObjectManipulationManager::UpdatePlaceholderPosition() {
 }
 
 
-void  ObjectManipulationManager::CameraHook::thunk(void*, RE::TESObjectREFR** refPtr) {
+void  ObjectManipulationManager::CameraHook::thunk(void* a1, RE::TESObjectREFR** refPtr) {
+    originalFunction(a1, refPtr);
     if (monitorState != MonitorState::Idle) {
 
             auto obj = placeholderRef;
@@ -110,8 +112,10 @@ void  ObjectManipulationManager::CameraHook::thunk(void*, RE::TESObjectREFR** re
             if (camera->currentState.get()->id == RE::CameraState::kFirstPerson) {
                 firstPerson->GetRotation(rotation);
             }
-            if (camera->currentState.get()->id == RE::CameraState::kThirdPerson) {
+            else if (camera->currentState.get()->id == RE::CameraState::kThirdPerson) {
                 rotation = thirdPerson->rotation;
+            } else {
+                return;
             }
             auto player = RE::PlayerCharacter::GetSingleton();
 
@@ -124,7 +128,7 @@ void  ObjectManipulationManager::CameraHook::thunk(void*, RE::TESObjectREFR** re
             SKSE::GetTaskInterface()->AddTask([obj,pos,camera]() {
                 Utils::SetPosition(obj, pos);
                 Utils::SetAngle(obj,
-                         RE::NiPoint3(0, 0, std::atan2(camera->pos.x - pos.x, camera->pos.y - pos.y) + M_PI));
+                         RE::NiPoint3(0, 0, std::atan2(camera->pos.x - pos.x, camera->pos.y - pos.y) + angleOffset));
                 obj->Update3DPosition(true);
             });
 
@@ -134,6 +138,17 @@ void  ObjectManipulationManager::CameraHook::thunk(void*, RE::TESObjectREFR** re
                 SetPlacementState(ValidState::Error);
             }
         }
+}
+
+double normalizeAngle(double angle_rad) {
+    // Normalize angle to be within [0, 2*pi)
+    while (angle_rad < 0) {
+        angle_rad += 2 * M_PI;
+    }
+    while (angle_rad >= 2 * M_PI) {
+        angle_rad -= 2 * M_PI;
+    }
+    return angle_rad;
 }
 
 void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
@@ -148,9 +163,17 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
             if (auto button = current->AsButtonEvent()) {
 
                 if (button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
+
+                    logger::trace("key: {}", button->GetIDCode());
+
                     switch (auto key = static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode())) {
                         case RE::BSWin32MouseDevice::Key::kWheelUp:
+                            suppress = true;
+                            angleOffset = normalizeAngle(angleOffset + M_PI / 30);
+                            break;
                         case RE::BSWin32MouseDevice::Key::kWheelDown:
+                            suppress = true;
+                            angleOffset = normalizeAngle(angleOffset - M_PI / 30);
                             break;
                         default:
                             if (RE::BSWin32MouseDevice::Key::kRightButton == key) {
@@ -184,13 +207,8 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
             constexpr RE::InputEvent* const dummy[] = {nullptr};
             originalFunction(a_dispatcher, dummy);
         } else {
-            size_t i = 0;
-            RE::InputEvent** result = new RE::InputEvent*[length];
-            for (auto current = first; current; current = current->next) {
-                result[i] = current;
-                ++i;
-            }
-            originalFunction(a_dispatcher, const_cast<RE::InputEvent* const*>(result));
+            RE::InputEvent* const e[] = {first};
+            originalFunction(a_dispatcher, e);
         }
     } else {
         originalFunction(a_dispatcher, a_event);
