@@ -2,10 +2,10 @@
 #include <glm/glm.hpp>
 
 namespace Utils {
-    std::pair<RE::NiPoint3, RE::NiPoint3> PlayerCameraRay();
+    std::pair<RE::NiPoint3, RE::NiPoint3> PlayerCameraRayPos();
+    RE::TESObjectREFR* PlayerCameraRayRefr();
     RE::NiPoint3 Raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position);
-    RE::NiPoint3 Raycast2(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position);
-    RE::TESObjectREFR* PickObject();
+    RE::TESObjectREFR* RaycastObjectRefr(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position);
     void SetPosition(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position);
     void SetAngle(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position);
 
@@ -18,8 +18,8 @@ namespace Utils {
 
 
 
-
-    	class RayCollector {
+    //TODO: Add smooth cam creadits
+    class RayCollector {
     public:
         struct HitResult {
             glm::vec3 normal;

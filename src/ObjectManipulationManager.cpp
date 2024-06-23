@@ -109,7 +109,7 @@ void ObjectManipulationManager::Update() {
     }
 
     SKSE::GetTaskInterface()->AddTask([obj]() {
-        auto [cameraPosition, rayPostion] = Utils::PlayerCameraRay();
+        auto [cameraPosition, rayPostion] = Utils::PlayerCameraRayPos();
 
         UpdatePlaceholderPosition();
         Utils::SetPosition(obj, rayPostion);
@@ -207,7 +207,12 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
                 if (button->IsDown() && button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
                     if (static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode()) ==
                         RE::BSWin32MouseDevice::Key::kMiddleButton) {
-                        SKSE::GetTaskInterface()->AddTask([]() { Utils::PlayerCameraRay(); });
+                        SKSE::GetTaskInterface()->AddTask([]() { 
+                        
+                            if (auto ref = Utils::PlayerCameraRayRefr()) {
+                                logger::info("Name: {}, Id: {:x}", ref->GetName(), ref->GetBaseObject()->GetFormID());
+                            }
+                        });
 
                     }
                 }

@@ -63,7 +63,8 @@ RE::MagicTarget* FindPickTarget(RE::MagicCaster* caster, RE::NiPoint3& a_targetL
     REL::Relocation<func_t> func{RELOCATION_ID(33676, 34456)};
     return func(caster, a_targetLocation, a_targetCell, a_pickData);
 }
-std::pair<RE::NiPoint3, RE::NiPoint3> Utils::PlayerCameraRay() {
+
+std::pair<RE::NiQuaternion, RE::NiPoint3> GetCameraData() {
     RE::PlayerCamera* camera = RE::PlayerCamera::GetSingleton();
     auto thirdPerson =
         reinterpret_cast<RE::ThirdPersonState*>(camera->cameraStates[RE::CameraState::kThirdPerson].get());
@@ -75,14 +76,29 @@ std::pair<RE::NiPoint3, RE::NiPoint3> Utils::PlayerCameraRay() {
         firstPerson->GetRotation(rotation);
     } else if (camera->currentState.get()->id == RE::CameraState::kThirdPerson) {
         rotation = thirdPerson->rotation;
-    } else {
-        return std::pair<RE::NiPoint3, RE::NiPoint3>();
+    } 
+    else {
+        return {};
     }
+    return std::pair(rotation, camera->pos);
+}
+
+std::pair<RE::NiPoint3, RE::NiPoint3> Utils::PlayerCameraRayPos() {
+
     auto player = RE::PlayerCharacter::GetSingleton();
 
-    auto pos = Utils::Raycast2(player, rotation, camera->pos);
+    auto [rotation, pos] = GetCameraData();
 
-    return std::pair<RE::NiPoint3, RE::NiPoint3>(camera->pos, pos);
+    auto pos2 = Utils::Raycast(player, rotation, pos);
+
+    return std::pair<RE::NiPoint3, RE::NiPoint3>(pos, pos2);
+}
+RE::TESObjectREFR* Utils::PlayerCameraRayRefr() {
+    auto player = RE::PlayerCharacter::GetSingleton();
+
+    auto [rotation, pos] = GetCameraData();
+
+    return Utils::RaycastObjectRefr(player, rotation, pos);
 }
 RE::NiPoint3 Utils::Raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position) {
     auto havokWorldScale = RE::bhkWorld::GetWorldScale();
@@ -112,7 +128,7 @@ RE::NiPoint3 Utils::Raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoi
     return hitpos;
 }
 
-RE::NiPoint3 Utils::Raycast2(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position) {
+RE::TESObjectREFR* Utils::RaycastObjectRefr(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position) {
     auto havokWorldScale = RE::bhkWorld::GetWorldScale();
     RE::bhkPickData pick_data;
     RE::NiPoint3 ray_start, ray_end;
@@ -138,7 +154,6 @@ RE::NiPoint3 Utils::Raycast2(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPo
         physicsWorld->PickObject(pick_data);
     }
 
-
     RayCollector::HitResult best = {};
     best.hitFraction = 1.0f;
     RE::NiPoint3 bestPos = {};
@@ -157,61 +172,17 @@ RE::NiPoint3 Utils::Raycast2(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPo
         }
     }
 
-    if (!best.body) return {};
+    if (!best.body) return nullptr;
     auto av = best.getAVObject();
 
     if (av) {
         auto ref = av->GetUserData();
-        if (ref && ref->formType == RE::FormType::ActorCharacter) {
-            logger::info("{}",reinterpret_cast<RE::Character*>(ref)->GetName());
 
-        }
+        return ref;
     }
-    return {};
-}
-
-RE::TESObjectREFR* Utils::PickObject() {
-    // auto [cam, pos] = PlayerCameraRay();
-    // float min = std::numeric_limits<float>::max();
-    // RE::TESObjectREFR* result = nullptr;
-    // auto player = RE::PlayerCharacter::GetSingleton();
-    // auto wordspace = player->GetWorldspace();
-    // auto playerCell = player->GetParentCell();
-
-    // if (wordspace) {
-    //     for (auto [key, cell] : wordspace->cellMap) {
-    //         for (auto refPtr : cell->GetRuntimeData().references) {
-    //             if (refPtr) {
-    //                 if (auto ref = refPtr.get()) {
-    //                     auto dist = pointDistance(ref->GetPosition(), pos);
-    //                     if (dist < min) {
-    //                         min = dist;
-    //                         result = ref;
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-    // else if(playerCell)
-    //{
-    //     for (auto refPtr : playerCell->GetRuntimeData().references) {
-    //         if (refPtr) {
-    //             if (auto ref = refPtr.get()) {
-    //                 logger::info("{}",ref->GetBaseObject()->GetFormType());
-    //                 auto dist = pointDistance(ref->GetPosition(), pos);
-    //                 if (dist < min) {
-    //                     min = dist;
-    //                     result = ref;
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
-    // return result;
     return nullptr;
 }
+
 
 void Utils::SetPosition(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position) {
     if (!ref) {
