@@ -2,6 +2,13 @@
 
 #define M_PI 3.14159265358979323846
 
+float pointDistance(RE::NiPoint3 a, RE::NiPoint3 b) {
+    float dx = a.x - b.x;
+    float dy = a.y - b.y;
+    float dz = a.z - b.z;
+    return std::sqrt(dx * dx + dy * dy + dz * dz);
+}
+
 RE::NiPoint3 angles2dir(const RE::NiPoint3& angles) {
     RE::NiPoint3 ans;
 
@@ -101,6 +108,28 @@ RE::NiPoint3 Utils::Raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoi
         hitpos = ray_end;
     }
     return hitpos;
+}
+
+RE::TESObjectREFR* Utils::PickObject() {
+    auto [cam, pos] = PlayerCameraRay();
+    float min = std::numeric_limits<float>::max();
+    RE::TESObjectREFR* result = nullptr;
+/*    auto cells = RE::TESDataHandler::GetSingleton()->objectList;
+    for(auto playerCell : cells) {
+        for (auto& refPtr : playerCell->GetRuntimeData().references) {
+            if (refPtr) {
+                auto ref = refPtr.get();
+                if (ref) {
+                    auto dist = pointDistance(ref->GetPosition(), pos);
+                    if (dist < min) {
+                        min = dist;
+                        result = ref;
+                    }
+                }
+            }
+        }
+    }*/
+    return result;
 }
 
 void Utils::SetPosition(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position) {

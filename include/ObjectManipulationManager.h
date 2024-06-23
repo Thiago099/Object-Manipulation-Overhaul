@@ -52,6 +52,8 @@ class ObjectManipulationManager {
 
    static void UpdatePlaceholderPosition();
 
+   static void Update();
+
 
 };
 

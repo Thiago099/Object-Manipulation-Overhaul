@@ -8,10 +8,6 @@ void MoveTo_Impl(RE::TESObjectREFR* ref, const RE::ObjectRefHandle& a_targetHand
     return func(ref, a_targetHandle, a_targetCell, a_selfWorldSpace, a_position, a_rotation);
 }
 
-RE::NiPoint3 GetPlayerDummyPosition() {
-    auto player = RE::PlayerCharacter::GetSingleton();
-    return RE::NiPoint3(player->GetPositionX(), player->GetPositionY(), std::numeric_limits<float>::max());
-}
 
 void ObjectManipulationManager::SetPlacementState(ValidState id) {
     if (id != currentState) {
@@ -24,18 +20,35 @@ void ObjectManipulationManager::SetPlacementState(ValidState id) {
         }
     }
 }
-
+void MoveHavok(RE::TESObjectREFR* ref) {
+    if (!ref) {
+        return;
+    }
+    using func_t = uint32_t(RE::TESObjectREFR*, uint8_t);
+    REL::Relocation<func_t> func{RELOCATION_ID(19367, 19794)};
+    func(ref, 1);
+}
 void ObjectManipulationManager::CreatePlaceholder() {
     const auto dataHandler = RE::TESDataHandler::GetSingleton();
     auto placeholderFormId = dataHandler->LookupFormID(0x803, "ObjectManipulator.esp");
     placeholder = RE::TESForm::LookupByID<RE::TESObjectACTI>(placeholderFormId);
     auto player = RE::PlayerCharacter::GetSingleton();
     placeholderRef = RE::TESDataHandler::GetSingleton()
-                         ->CreateReferenceAtLocation(placeholder, GetPlayerDummyPosition(), RE::NiPoint3(0, 0, 0),
+                         ->CreateReferenceAtLocation(placeholder, player->GetPosition(), RE::NiPoint3(0, 0, 0),
                                                      player->GetParentCell(), player->GetWorldspace(), nullptr, nullptr,
                                                      RE::ObjectRefHandle(), true, true)
                          .get()
                          .get();
+
+
+        
+        //auto obj = placeholderRef;
+    //SKSE::GetTaskInterface()->AddTask([obj]() {
+    //    placeholderRef->Get3D()->SetCollisionLayer(RE::COL_LAYER::kNonCollidable);
+    //    placeholderRef->Set3D(placeholderRef->Get3D(), true);
+    //    placeholderRef->Disable();
+    //    placeholderRef->Enable(false);
+    //});
 }
 
 
@@ -65,7 +78,6 @@ void ObjectManipulationManager::Pick(RE::TESForm* baseObject) {
         placeholder->SetModel(baseObject->As<RE::TESModel>()->GetModel());
         monitorState = MonitorState::Running;
     }
-
 }
 
 void ObjectManipulationManager::Cancel() {
@@ -91,39 +103,39 @@ void ObjectManipulationManager::UpdatePlaceholderPosition() {
     if (placeholderRef->GetWorldspace() != player->GetWorldspace() ||
         placeholderRef->GetParentCell() != player->GetParentCell()) {
         MoveTo_Impl(placeholderRef, player->GetHandle(), player->GetParentCell(), player->GetWorldspace(),
-                    GetPlayerDummyPosition(), placeholderRef->GetAngle());
+                    player->GetPosition(), placeholderRef->GetAngle());
     }
+}
+
+void ObjectManipulationManager::Update() {
+    auto obj = placeholderRef;
+
+    auto obj3d = placeholderRef->Get3D();
+    if (obj3d && obj3d->GetCollisionLayer() != RE::COL_LAYER::kNonCollidable) {
+        obj3d->SetCollisionLayer(RE::COL_LAYER::kNonCollidable);
+    }
+
+    SKSE::GetTaskInterface()->AddTask([obj]() {
+        auto [cameraPosition, rayPostion] = Utils::PlayerCameraRay();
+
+        UpdatePlaceholderPosition();
+        Utils::SetPosition(obj, rayPostion);
+        Utils::SetAngle(
+            obj, RE::NiPoint3(
+                        0, 0, std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) + angleOffset));
+        obj->Update3DPosition(true);
+
+        if (Utils::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
+            SetPlacementState(ValidState::Valid);
+        } else {
+            SetPlacementState(ValidState::Error);
+        }
+    });
 }
 
 
 void  ObjectManipulationManager::CameraHook::thunk(void* a1, RE::TESObjectREFR** refPtr) {
     originalFunction(a1, refPtr);
-    if (monitorState != MonitorState::Idle) {
-
-            auto obj = placeholderRef;
-
-            auto [cameraPosition, rayPostion] = Utils::PlayerCameraRay();
-
-            
-            UpdatePlaceholderPosition();
-
-
-
-            SKSE::GetTaskInterface()->AddTask([obj, rayPostion, cameraPosition]() {
-                Utils::SetPosition(obj, rayPostion);
-                Utils::SetAngle(obj,
-                    RE::NiPoint3(0, 0,
-                                      std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) +
-                                          angleOffset));
-                obj->Update3DPosition(true);
-            });
-
-            if (Utils::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
-                SetPlacementState(ValidState::Valid);
-            } else {
-                SetPlacementState(ValidState::Error);
-            }
-        }
 }
 
 double normalizeAngle(double angle_rad) {
@@ -139,7 +151,9 @@ double normalizeAngle(double angle_rad) {
 
 void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
                                                              RE::InputEvent* const* a_event) {
-    if (currentState != MonitorState::Idle) {
+    if (monitorState != MonitorState::Idle) {
+        Update();
+
 
         auto first = *a_event;
         auto last = *a_event;
@@ -195,6 +209,21 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
             originalFunction(a_dispatcher, e);
         }
     } else {
+        for (auto current = *a_event; current; current = current->next) {
+            if (auto button = current->AsButtonEvent()) {
+                if (button->IsDown() && button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
+                    if (static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode()) ==
+                        RE::BSWin32MouseDevice::Key::kMiddleButton) {
+                        SKSE::GetTaskInterface()->AddTask([]() { Utils::PickObject();
+                        });
+                    }
+                }
+
+            }
+
+
+        }
+
         originalFunction(a_dispatcher, a_event);
     }
 
