@@ -72,15 +72,18 @@ std::pair<RE::NiQuaternion, RE::NiPoint3> GetCameraData() {
         reinterpret_cast<RE::FirstPersonState*>(camera->cameraStates[RE::CameraState::kFirstPerson].get());
 
     RE::NiQuaternion rotation;
+    RE::NiPoint3 translation;
     if (camera->currentState.get()->id == RE::CameraState::kFirstPerson) {
         firstPerson->GetRotation(rotation);
+        firstPerson->GetTranslation(translation);
     } else if (camera->currentState.get()->id == RE::CameraState::kThirdPerson) {
         rotation = thirdPerson->rotation;
+        translation = thirdPerson->translation;
     } 
     else {
         return {};
     }
-    return std::pair(rotation, camera->pos);
+    return std::pair(rotation, translation);
 }
 
 std::pair<RE::NiPoint3, RE::NiPoint3> Utils::PlayerCameraRayPos() {
