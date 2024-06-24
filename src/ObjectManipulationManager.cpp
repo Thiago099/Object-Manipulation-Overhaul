@@ -10,14 +10,17 @@ void MoveTo_Impl(RE::TESObjectREFR* ref, const RE::ObjectRefHandle& a_targetHand
 
 
 void ObjectManipulationManager::SetPlacementState(ValidState id) {
+
     if (id != currentState) {
         currentState = id;
-        if (currentState == ValidState::Valid) {
-            Utils::CallPapyrusAction(placeholderRef, "OM_MarkerScript", "SetValid");
-        
-        } else if (currentState == ValidState::Error) {
-            Utils::CallPapyrusAction(placeholderRef, "OM_MarkerScript", "SetError");
+
+        for (auto [state, shader] : shaders) {
+            if (state != id) {
+                Papyrus::Stop(shader, placeholderRef);
+            }
         }
+
+        Papyrus::Play(shaders[id], placeholderRef);
     }
 }
 
@@ -31,7 +34,7 @@ void ObjectManipulationManager::CreatePlaceholder() {
                          .get()
                          .get();
 
-    Utils::CallPapyrusAction(placeholderRef, "OM_MarkerScript", "SetValid");
+
 
 }
 
@@ -52,7 +55,25 @@ void ObjectManipulationManager::Install() {
     auto placeholderFormId = dataHandler->LookupFormID(0x803, "ObjectManipulator.esp");
     placeholder = RE::TESForm::LookupByID<RE::TESObjectACTI>(placeholderFormId);
 
+    auto validShaderId = dataHandler->LookupFormID(0x800, "ObjectManipulator.esp");
+    auto validShader = RE::TESForm::LookupByID<RE::TESEffectShader>(validShaderId);
+    auto invalidShaderId = dataHandler->LookupFormID(0x801, "ObjectManipulator.esp");
+    auto invalidShader = RE::TESForm::LookupByID<RE::TESEffectShader>(invalidShaderId);
+
+    shaders[ValidState::Valid] = validShader;
+    shaders[ValidState::Error] = invalidShader;
+
     delete builder;
+}
+
+
+void ObjectManipulationManager::Cancel() {
+    if (placeholderRef) {
+        monitorState = MonitorState::Idle;
+        currentState = ValidState::None;
+        Papyrus::Delete(placeholderRef);
+        pickObject->Enable(false);
+    }
 }
 
 
@@ -71,51 +92,32 @@ void ObjectManipulationManager::Pick(RE::TESObjectREFR* baseObject) {
         if (!placeholderRef) {
             return;
         }
+        auto obj = placeholderRef;
+        auto scale = baseObject->GetScale();
+         Papyrus::SetScale(placeholderRef, scale);
+        //baseObject->GetCurrent3D();
         angleOffset = M_PI;
         pickObject = baseObject;
         monitorState = MonitorState::Running;
-
-        //RE::hkVector4 pcml;
-        //RE::hkVector4 pcmw;
-        //pickObject->Get3D()->AsBhkRigidBody()->GetCenterOfMassLocal(pcml);
-        //pickObject->Get3D()->AsBhkRigidBody()->GetCenterOfMassWorld(pcmw);
-        //RE::hkVector4 ocml;
-        //RE::hkVector4 ocmw;
-        //pickObject->Get3D()->AsBhkRigidBody()->GetCenterOfMassLocal(ocml);
-        //pickObject->Get3D()->AsBhkRigidBody()->GetCenterOfMassWorld(ocmw);
-
-        //ocml,
-        pickObject->Disable();
-        auto obj = pickObject;
-
-    }
-}
-
-void ObjectManipulationManager::Cancel() {
-    if (placeholderRef) {
-        monitorState = MonitorState::Idle;
         currentState = ValidState::None;
-        Utils::CallPapyrusAction(placeholderRef, "OM_MarkerScript", "Destroy");
-        pickObject->Enable(false);
+        pickObject->Disable();
+        
     }
 }
+
 void ObjectManipulationManager::Release() {
     if (placeholderRef) {
         monitorState = MonitorState::Idle;
         currentState = ValidState::None;
 
-        MoveTo_Impl(pickObject, RE::ObjectRefHandle(), placeholderRef->GetParentCell(),
-                    placeholderRef->GetWorldspace(), placeholderRef->GetPosition(), placeholderRef->GetAngle());
+        MoveTo_Impl(pickObject, RE::ObjectRefHandle(), placeholderRef->GetParentCell(), placeholderRef->GetWorldspace(),
+                    placeholderRef->GetPosition(), placeholderRef->GetAngle());
+
 
         pickObject->Enable(false);
 
-        //auto position = pickObject->GetPosition();
-        //position.z = 0.f;
-        //Utils::SetPosition(pickObject, position);
-        //pickObject->Update3DPosition(true);
 
-
-        Utils::CallPapyrusAction(placeholderRef, "OM_MarkerScript", "Destroy");
+        Papyrus::Delete(placeholderRef);
     }
 
 }
@@ -139,9 +141,6 @@ void ObjectManipulationManager::Update() {
 
     SKSE::GetTaskInterface()->AddTask([obj]() {
         auto [cameraPosition, rayPostion] = Utils::PlayerCameraRayPos();
-
-
-
 
         UpdatePlaceholderPosition();
         Utils::SetPosition(obj, rayPostion);

@@ -1,6 +1,7 @@
 #pragma once
 #include "Utils.h"
 #include "HookBuilder.h"
+#include "Papyus.h"
 #define M_PI 3.14159265358979323846
 
 class ObjectManipulationManager {
@@ -16,6 +17,7 @@ class ObjectManipulationManager {
         Idle,
         Running
     };
+
 
     static inline std::map<ValidState, RE::TESEffectShader*> shaders;
 

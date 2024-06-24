@@ -223,16 +223,7 @@ float Utils::DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b) {
     return std::sqrt(dx * dx + dy * dy + dz * dz);
 }
 
-void Utils::CallPapyrusAction(RE::TESObjectREFR* obj, const char* className, const char* methodName) {
-    auto* vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
-    auto handlePolicy = vm->GetObjectHandlePolicy();
-    auto args = RE::MakeFunctionArguments();
-    RE::VMHandle handle = handlePolicy->GetHandleForObject(RE::FormType::Reference, obj);
-    auto callback = RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor>();
-    bool success =
-        vm->DispatchMethodCall(handle, RE::BSFixedString(className), RE::BSFixedString(methodName), args, callback);
-    handlePolicy->ReleaseHandle(handle);
-}
+
 
 
 

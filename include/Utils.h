@@ -11,8 +11,6 @@ namespace Utils {
 
     void StopVisualEffect(RE::TESObjectREFR* r, void* e);
     float DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b);
-    void CallPapyrusAction(RE::TESObjectREFR* obj, const char* className, const char* methodName);
-
 
 
 
