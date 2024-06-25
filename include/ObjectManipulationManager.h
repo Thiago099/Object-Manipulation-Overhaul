@@ -28,6 +28,7 @@ class ObjectManipulationManager {
 
     static inline RE::COL_LAYER colisionLayer;
     static inline RE::TESObjectREFR* pickObject;
+    static inline ValidState stateBuffer = ValidState::None;
     static inline ValidState currentState = ValidState::None;
     static inline MonitorState monitorState = MonitorState::Idle;
     static inline bool pickedObjectHasCollison = false;

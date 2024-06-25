@@ -135,6 +135,9 @@ void ObjectManipulationManager::Release() {
             obj3d->SetCollisionLayer(layer);
         }
         SKSE::GetTaskInterface()->AddTask([obj3d, layer, obj]() { 
+            //auto pos = obj->GetPosition();
+            //pos.z += obj3d->worldBound.radius / 2;
+            //obj->SetPosition(pos);
             obj->Disable();
             obj->Enable(false);
         });
@@ -154,9 +157,9 @@ void ObjectManipulationManager::UpdatePlaceholderPosition() {
 void ObjectManipulationManager::Update() {
     auto obj = pickObject;
 
-
-    auto [cameraPosition, rayPostion] = Utils::PlayerCameraRayPos();
-    SKSE::GetTaskInterface()->AddTask([obj, cameraPosition, rayPostion]() {
+    auto state = &stateBuffer;
+    SKSE::GetTaskInterface()->AddTask([obj, state]() {
+        auto [cameraPosition, rayPostion] = Utils::PlayerCameraRayPos();
         UpdatePlaceholderPosition();
         Utils::SetPosition(obj, rayPostion);
         Utils::SetAngle(
@@ -165,17 +168,14 @@ void ObjectManipulationManager::Update() {
                 0, 0, std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) + angleOffset));
         obj->Update3DPosition(true);
 
-        auto obj3d = obj->Get3D();
-
-        auto updateData = RE::NiUpdateData(); 
-        obj3d->UpdateTransformAndBounds(updateData);
-
+        if (Utils::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
+            *state = ValidState::Valid;
+        } else {
+            *state = ValidState::Error;
+        }
     });
-    if (Utils::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
-        SetPlacementState(ValidState::Valid);
-    } else {
-        SetPlacementState(ValidState::Error);
-    }
+
+    SetPlacementState(stateBuffer);
 
         //logger::info("Water: {}, name: {}", obj->IsInWater(),
         //                 RE::TES::GetSingleton()->GetLandTexture(rayPostion)->materialType->materialName);
