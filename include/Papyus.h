@@ -30,9 +30,7 @@ namespace Papyrus {
         handlePolicy->ReleaseHandle(handle);
     }
 
-	inline void SetScale(RE::TESObjectREFR* refr, float scale) {
-        CallPapyrusAction(refr, "ObjectReference", "SetScale", std::forward<float>(scale));
-	}
+
     inline void Delete(RE::TESObjectREFR* refr) {
         CallPapyrusAction(refr, "ObjectReference", "Delete");
     }

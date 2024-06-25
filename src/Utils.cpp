@@ -64,7 +64,8 @@ RE::MagicTarget* FindPickTarget(RE::MagicCaster* caster, RE::NiPoint3& a_targetL
     return func(caster, a_targetLocation, a_targetCell, a_pickData);
 }
 
-std::pair<RE::NiQuaternion, RE::NiPoint3> GetCameraData() {
+
+std::pair<RE::NiQuaternion, RE::NiPoint3> Utils::GetCameraData() {
     RE::PlayerCamera* camera = RE::PlayerCamera::GetSingleton();
     auto thirdPerson =
         reinterpret_cast<RE::ThirdPersonState*>(camera->cameraStates[RE::CameraState::kThirdPerson].get());

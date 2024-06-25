@@ -18,16 +18,22 @@ class ObjectManipulationManager {
         Running
     };
 
+    static inline bool cdset = false;
+
+
+    static inline RE::NiPoint3 cd = {};
+
 
     static inline std::map<ValidState, RE::TESEffectShader*> shaders;
 
-    static inline RE::TESObjectREFR* placeholderRef;
-    static inline RE::TESObjectACTI* placeholder;
-
+    static inline RE::COL_LAYER colisionLayer;
     static inline RE::TESObjectREFR* pickObject;
     static inline ValidState currentState = ValidState::None;
     static inline MonitorState monitorState = MonitorState::Idle;
     static inline bool pickedObjectHasCollison = false;
+
+    static inline RE::NiPoint3 lastPos;
+    static inline RE::NiPoint3 lastAngle;
 
     static inline float angleOffset = M_PI;
 

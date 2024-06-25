@@ -1,5 +1,15 @@
 #include "ObjectManipulationManager.h"
 
+double normalizeAngle(double angle_rad) {
+    // Normalize angle to be within [0, 2*pi)
+    while (angle_rad < 0) {
+        angle_rad += 2 * M_PI;
+    }
+    while (angle_rad >= 2 * M_PI) {
+        angle_rad -= 2 * M_PI;
+    }
+    return angle_rad;
+}
 
 void MoveTo_Impl(RE::TESObjectREFR* ref, const RE::ObjectRefHandle& a_targetHandle, RE::TESObjectCELL* a_targetCell,
                  RE::TESWorldSpace* a_selfWorldSpace, const RE::NiPoint3& a_position, const RE::NiPoint3& a_rotation) {
@@ -16,27 +26,15 @@ void ObjectManipulationManager::SetPlacementState(ValidState id) {
 
         for (auto [state, shader] : shaders) {
             if (state != id) {
-                Papyrus::Stop(shader, placeholderRef);
+                Papyrus::Stop(shader, pickObject);
             }
         }
 
-        Papyrus::Play(shaders[id], placeholderRef);
+        Papyrus::Play(shaders[id], pickObject);
     }
 }
 
-void ObjectManipulationManager::CreatePlaceholder() {
 
-    auto player = RE::PlayerCharacter::GetSingleton();
-    placeholderRef = RE::TESDataHandler::GetSingleton()
-                         ->CreateReferenceAtLocation(placeholder, player->GetPosition(), RE::NiPoint3(0, 0, 0),
-                                                     player->GetParentCell(), player->GetWorldspace(), nullptr, nullptr,
-                                                     RE::ObjectRefHandle(), true, true)
-                         .get()
-                         .get();
-
-
-
-}
 
 
 RE::TESEffectShader* LookUpShader(uint32_t id) {
@@ -52,9 +50,6 @@ void ObjectManipulationManager::Install() {
     builder->Install();
 
     const auto dataHandler = RE::TESDataHandler::GetSingleton();
-    auto placeholderFormId = dataHandler->LookupFormID(0x803, "ObjectManipulator.esp");
-    placeholder = RE::TESForm::LookupByID<RE::TESObjectACTI>(placeholderFormId);
-
     auto validShaderId = dataHandler->LookupFormID(0x800, "ObjectManipulator.esp");
     auto validShader = RE::TESForm::LookupByID<RE::TESEffectShader>(validShaderId);
     auto invalidShaderId = dataHandler->LookupFormID(0x801, "ObjectManipulator.esp");
@@ -67,14 +62,6 @@ void ObjectManipulationManager::Install() {
 }
 
 
-void ObjectManipulationManager::Cancel() {
-    if (placeholderRef) {
-        monitorState = MonitorState::Idle;
-        currentState = ValidState::None;
-        Papyrus::Delete(placeholderRef);
-        pickObject->Enable(false);
-    }
-}
 
 
 void ObjectManipulationManager::Pick(RE::TESObjectREFR* baseObject) {
@@ -83,82 +70,115 @@ void ObjectManipulationManager::Pick(RE::TESObjectREFR* baseObject) {
         if (!baseObj) {
             return;
         }
-        auto modelBase = baseObj->As<RE::TESModel>();
-        if (!modelBase) {
-            return;
+
+        auto obj3d = baseObject->Get3D();
+        if (obj3d) {
+            auto currentLayer = obj3d->GetCollisionLayer();
+            colisionLayer = currentLayer;
+            if (currentLayer != RE::COL_LAYER::kNonCollidable) {
+                obj3d->SetCollisionLayer(RE::COL_LAYER::kNonCollidable);
+            }
         }
-        placeholder->SetModel(modelBase->GetModel());
-        CreatePlaceholder();
-        if (!placeholderRef) {
-            return;
-        }
-        auto obj = placeholderRef;
-        auto scale = baseObject->GetScale();
-         Papyrus::SetScale(placeholderRef, scale);
-        //baseObject->GetCurrent3D();
-        angleOffset = M_PI;
+
+        lastPos = baseObject->GetPosition();
+        lastAngle = baseObject->GetAngle();
+
+        //placeholder->SetModel(modelBase->GetModel());
+        //CreatePlaceholder();
+        //if (!placeholderRef) {
+        //    return;
+        //}
+
+        //auto scale = baseObject->GetScale();
+        //Papyrus::SetScale(placeholderRef, scale);
+
+        auto pos = baseObject->GetPosition();
+        auto angle = baseObject->GetAngle().z;
+        auto [cameraAngle, cameraPosition] = Utils::GetCameraData();
+        angleOffset = normalizeAngle(angle - std::atan2(cameraPosition.x - pos.x, cameraPosition.y - pos.y));
         pickObject = baseObject;
         monitorState = MonitorState::Running;
         currentState = ValidState::None;
-        pickObject->Disable();
         
     }
 }
 
-void ObjectManipulationManager::Release() {
-    if (placeholderRef) {
-        monitorState = MonitorState::Idle;
-        currentState = ValidState::None;
-
-        MoveTo_Impl(pickObject, RE::ObjectRefHandle(), placeholderRef->GetParentCell(), placeholderRef->GetWorldspace(),
-                    placeholderRef->GetPosition(), placeholderRef->GetAngle());
-
-
-        pickObject->Enable(false);
-
-
-        Papyrus::Delete(placeholderRef);
+void ObjectManipulationManager::Cancel() {
+    monitorState = MonitorState::Idle;
+    auto obj = pickObject;
+    auto shader = shaders[currentState];
+    currentState = ValidState::None;
+    Papyrus::Stop(shader, obj);
+    auto obj3d = pickObject->Get3D();
+    auto layer = colisionLayer;
+    if (obj3d) {
+        obj3d->SetCollisionLayer(layer);
     }
+    SKSE::GetTaskInterface()->AddTask([obj3d, layer, obj]() {
+        MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(), lastPos, lastAngle);
+        obj->Disable();
+        obj->Enable(false);
+
+    });
+
+}
+void ObjectManipulationManager::Release() {
+        monitorState = MonitorState::Idle;
+        auto obj = pickObject;
+        auto shader = shaders[currentState];
+        currentState = ValidState::None;
+        Papyrus::Stop(shader, obj);
+
+        auto obj3d = pickObject->Get3D();
+        auto layer = colisionLayer;
+        if (obj3d) {
+            obj3d->SetCollisionLayer(layer);
+        }
+        SKSE::GetTaskInterface()->AddTask([obj3d, layer, obj]() { 
+            obj->Disable();
+            obj->Enable(false);
+        });
+
 
 }
 
 void ObjectManipulationManager::UpdatePlaceholderPosition() {
     auto player = RE::PlayerCharacter::GetSingleton();
-    if (placeholderRef->GetWorldspace() != player->GetWorldspace() ||
-        placeholderRef->GetParentCell() != player->GetParentCell()) {
-        MoveTo_Impl(placeholderRef, RE::ObjectRefHandle(), player->GetParentCell(),
+    if (pickObject->GetWorldspace() != player->GetWorldspace() ||
+        pickObject->GetParentCell() != player->GetParentCell()) {
+        MoveTo_Impl(pickObject, RE::ObjectRefHandle(), player->GetParentCell(),
                     player->GetWorldspace(),
-                    player->GetPosition(), placeholderRef->GetAngle());
+                    player->GetPosition(), pickObject->GetAngle());
     }
 }
 void ObjectManipulationManager::Update() {
-    auto obj = placeholderRef;
+    auto obj = pickObject;
 
-    auto obj3d = placeholderRef->Get3D();
-    if (obj3d && obj3d->GetCollisionLayer() != RE::COL_LAYER::kNonCollidable) {
-        obj3d->SetCollisionLayer(RE::COL_LAYER::kNonCollidable);
-    }
 
-    SKSE::GetTaskInterface()->AddTask([obj]() {
-        auto [cameraPosition, rayPostion] = Utils::PlayerCameraRayPos();
-
+    auto [cameraPosition, rayPostion] = Utils::PlayerCameraRayPos();
+    SKSE::GetTaskInterface()->AddTask([obj, cameraPosition, rayPostion]() {
         UpdatePlaceholderPosition();
         Utils::SetPosition(obj, rayPostion);
         Utils::SetAngle(
-            obj, RE::NiPoint3(
-                        0, 0, std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) + angleOffset));
+            obj,
+            RE::NiPoint3(
+                0, 0, std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) + angleOffset));
         obj->Update3DPosition(true);
 
-        if (Utils::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
-            SetPlacementState(ValidState::Valid);
-        } else {
-            SetPlacementState(ValidState::Error);
-        }
+        auto obj3d = obj->Get3D();
+
+        auto updateData = RE::NiUpdateData(); 
+        obj3d->UpdateTransformAndBounds(updateData);
+
+    });
+    if (Utils::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
+        SetPlacementState(ValidState::Valid);
+    } else {
+        SetPlacementState(ValidState::Error);
+    }
 
         //logger::info("Water: {}, name: {}", obj->IsInWater(),
         //                 RE::TES::GetSingleton()->GetLandTexture(rayPostion)->materialType->materialName);
-        
-    });
 }
 
 
@@ -166,16 +186,6 @@ void  ObjectManipulationManager::CameraHook::thunk(void* a1, RE::TESObjectREFR**
     originalFunction(a1, refPtr);
 }
 
-double normalizeAngle(double angle_rad) {
-    // Normalize angle to be within [0, 2*pi)
-    while (angle_rad < 0) {
-        angle_rad += 2 * M_PI;
-    }
-    while (angle_rad >= 2 * M_PI) {
-        angle_rad -= 2 * M_PI;
-    }
-    return angle_rad;
-}
 
 void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
                                                              RE::InputEvent* const* a_event) {

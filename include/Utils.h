@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 
 namespace Utils {
+    std::pair<RE::NiQuaternion, RE::NiPoint3> GetCameraData();
     std::pair<RE::NiPoint3, RE::NiPoint3> PlayerCameraRayPos();
     RE::TESObjectREFR* PlayerCameraRayRefr();
     RE::NiPoint3 Raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position);
