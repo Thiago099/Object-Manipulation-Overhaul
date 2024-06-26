@@ -271,9 +271,9 @@ void Utils::RayCollector::AddRayHit(const RE::hkpCdBody& body, const RE::hkpShap
     const auto collisionObj = static_cast<const RE::hkpCollidable*>(hit.body);
     const auto flags = collisionObj->broadPhaseHandle.collisionFilterInfo;
 
-    const uint64_t m = 1ULL << static_cast<uint64_t>(flags);
-    constexpr uint64_t filter = 0x40122716;  //@TODO
-    if ((m & filter) != 0) {
+    //const uint64_t m = 1ULL << static_cast<uint64_t>(flags);
+    //constexpr uint64_t filter = 0x40122716;  //@TODO
+    //if ((m & filter) != 0) {
         if (objectFilter.size() > 0) {
             for (const auto filteredObj : objectFilter) {
                 if (hit.getAVObject() == filteredObj) return;
@@ -282,7 +282,7 @@ void Utils::RayCollector::AddRayHit(const RE::hkpCdBody& body, const RE::hkpShap
 
         earlyOutHitFraction = hit.hitFraction;
         hits.push_back(std::move(hit));
-    }
+    //}
 }
 
 const std::vector<Utils::RayCollector::HitResult>& Utils::RayCollector::GetHits() { return hits; }

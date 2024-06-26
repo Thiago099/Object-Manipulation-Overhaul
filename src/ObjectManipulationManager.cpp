@@ -45,7 +45,6 @@ RE::TESEffectShader* LookUpShader(uint32_t id) {
 
 void ObjectManipulationManager::Install() {
     auto builder = new HookBuilder();
-    builder->AddCall<CameraHook, 5, 14>(49852, 0x50, 50784, 0x54);
     builder->AddCall<ProcessInputQueueHook, 5, 14>(67315, 0x7B, 68617, 0x7B, 0xC519E0, 0x81);
     builder->Install();
 
@@ -64,14 +63,10 @@ void ObjectManipulationManager::Install() {
 
 
 
-void ObjectManipulationManager::Pick(RE::TESObjectREFR* baseObject) {
-    if (baseObject) {
-        auto baseObj = baseObject->GetBaseObject();
-        if (!baseObj) {
-            return;
-        }
+void ObjectManipulationManager::Pick(RE::TESObjectREFR* refr) {
+    if (refr) {
 
-        auto obj3d = baseObject->Get3D();
+        auto obj3d = refr->Get3D();
         if (obj3d) {
             auto currentLayer = obj3d->GetCollisionLayer();
             colisionLayer = currentLayer;
@@ -80,8 +75,8 @@ void ObjectManipulationManager::Pick(RE::TESObjectREFR* baseObject) {
             }
         }
 
-        lastPos = baseObject->GetPosition();
-        lastAngle = baseObject->GetAngle();
+        lastPos = refr->GetPosition();
+        lastAngle = refr->GetAngle();
 
         //placeholder->SetModel(modelBase->GetModel());
         //CreatePlaceholder();
@@ -92,13 +87,15 @@ void ObjectManipulationManager::Pick(RE::TESObjectREFR* baseObject) {
         //auto scale = baseObject->GetScale();
         //Papyrus::SetScale(placeholderRef, scale);
 
-        auto pos = baseObject->GetPosition();
-        auto angle = baseObject->GetAngle().z;
+        auto pos = refr->GetPosition();
+        auto angle = refr->GetAngle().z;
         auto [cameraAngle, cameraPosition] = Utils::GetCameraData();
         angleOffset = normalizeAngle(angle - std::atan2(cameraPosition.x - pos.x, cameraPosition.y - pos.y));
-        pickObject = baseObject;
-        monitorState = MonitorState::Running;
+        positionOffset = RE::NiPoint3(0, 0, 0);
+        ctrlKey = false;
+        pickObject = refr;
         currentState = ValidState::None;
+        monitorState = MonitorState::Running;
         
     }
 }
@@ -107,7 +104,6 @@ void ObjectManipulationManager::Cancel() {
     monitorState = MonitorState::Idle;
     auto obj = pickObject;
     auto shader = shaders[currentState];
-    currentState = ValidState::None;
     Papyrus::Stop(shader, obj);
     auto obj3d = pickObject->Get3D();
     auto layer = colisionLayer;
@@ -126,8 +122,7 @@ void ObjectManipulationManager::Release() {
         monitorState = MonitorState::Idle;
         auto obj = pickObject;
         auto shader = shaders[currentState];
-        currentState = ValidState::None;
-        Papyrus::Stop(shader, obj);
+        SKSE::GetTaskInterface()->AddTask([shader, obj]() { Papyrus::Stop(shader, obj); });
 
         auto obj3d = pickObject->Get3D();
         auto layer = colisionLayer;
@@ -135,7 +130,11 @@ void ObjectManipulationManager::Release() {
             obj3d->SetCollisionLayer(layer);
         }
         if (!obj3d->AsBhkRigidBody()) {
-            obj->SetPosition(obj3d->worldBound.center);
+            SKSE::GetTaskInterface()->AddTask([obj]() {
+                obj->Disable();
+                obj->Enable(false);
+            });
+
         }
 }
 
@@ -146,6 +145,7 @@ void ObjectManipulationManager::UpdatePlaceholderPosition() {
         MoveTo_Impl(pickObject, RE::ObjectRefHandle(), player->GetParentCell(),
                     player->GetWorldspace(),
                     player->GetPosition(), pickObject->GetAngle());
+        currentState = ValidState::None;
     }
 }
 void ObjectManipulationManager::Update() {
@@ -155,11 +155,12 @@ void ObjectManipulationManager::Update() {
     SKSE::GetTaskInterface()->AddTask([obj, state]() {
         auto [cameraPosition, rayPostion] = Utils::PlayerCameraRayPos();
         UpdatePlaceholderPosition();
-        Utils::SetPosition(obj, rayPostion);
+        Utils::SetPosition(obj, rayPostion+positionOffset);
+        
         Utils::SetAngle(
             obj,
-            RE::NiPoint3(
-                0, 0, std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) + angleOffset));
+            RE::NiPoint3(obj->GetAngleX(), obj->GetAngleY(),
+                         std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) + angleOffset));
         obj->Update3DPosition(true);
 
         if (Utils::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
@@ -176,9 +177,6 @@ void ObjectManipulationManager::Update() {
 }
 
 
-void  ObjectManipulationManager::CameraHook::thunk(void* a1, RE::TESObjectREFR** refPtr) {
-    originalFunction(a1, refPtr);
-}
 
 
 void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
@@ -192,19 +190,42 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
         size_t length = 0;
         for (auto current = *a_event; current; current = current->next) {
             bool suppress = false;
-            if (auto button = current->AsButtonEvent()) {
+                if (auto button = current->AsButtonEvent()) {
 
+                if (button->GetDevice() == RE::INPUT_DEVICE::kKeyboard) {
+                        switch (auto key = static_cast<RE::BSKeyboardDevice::Key>(button->GetIDCode())) {
+                        case RE::BSKeyboardDevice::Key::kLeftControl:
+                        case RE::BSKeyboardDevice::Key::kRightControl:
+                            if (button->IsDown()) {
+                                ctrlKey = true;
+                            } else if (button->IsUp()) {
+                                ctrlKey = false;
+                            }
+                            suppress = true;
+                            break;
+                            default:
+                                break;
+                        }
+                }
                 if (button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
 
 
                     switch (auto key = static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode())) {
                         case RE::BSWin32MouseDevice::Key::kWheelUp:
                             suppress = true;
-                            angleOffset = normalizeAngle(angleOffset + M_PI / 30);
+                            if (ctrlKey) {
+                                positionOffset.z += 0.3f;
+                            } else {
+                                angleOffset = normalizeAngle(angleOffset + M_PI / 30);
+                            }
                             break;
                         case RE::BSWin32MouseDevice::Key::kWheelDown:
                             suppress = true;
-                            angleOffset = normalizeAngle(angleOffset - M_PI / 30);
+                            if (ctrlKey) {
+                                positionOffset.z -= 0.3f;
+                            } else {
+                                angleOffset = normalizeAngle(angleOffset - M_PI / 30);
+                            }
                             break;
                         default:
                             if (RE::BSWin32MouseDevice::Key::kRightButton == key) {

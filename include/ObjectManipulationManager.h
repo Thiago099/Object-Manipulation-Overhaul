@@ -36,16 +36,16 @@ class ObjectManipulationManager {
     static inline RE::NiPoint3 lastPos;
     static inline RE::NiPoint3 lastAngle;
 
+    static inline bool ctrlKey = false;
+
+
     static inline float angleOffset = M_PI;
+    static inline RE::NiPoint3 positionOffset;
 
     static void SetPlacementState(ValidState id);
 
     static void CreatePlaceholder();
 
-    struct CameraHook {
-        static void thunk(void*, RE::TESObjectREFR** refPtr);
-        static inline REL::Relocation<decltype(thunk)> originalFunction;
-    };
     struct ProcessInputQueueHook {
         static void thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher, RE::InputEvent* const* a_event);
         static inline REL::Relocation<decltype(thunk)> originalFunction;
