@@ -21,7 +21,7 @@ void MoveTo_Impl(RE::TESObjectREFR* ref, const RE::ObjectRefHandle& a_targetHand
 
 void ObjectManipulationManager::SetPlacementState(ValidState id) {
 
-    if (id != currentState) {
+    if (id != currentState || currentState == ValidState::None) {
         currentState = id;
 
         for (auto [state, shader] : shaders) {
@@ -29,7 +29,7 @@ void ObjectManipulationManager::SetPlacementState(ValidState id) {
                 Papyrus::Stop(shader, pickObject);
             }
         }
-
+        logger::trace("shader id: {}", id);
         Papyrus::Play(shaders[id], pickObject);
     }
 }
@@ -53,6 +53,7 @@ void ObjectManipulationManager::Install() {
     auto validShader = RE::TESForm::LookupByID<RE::TESEffectShader>(validShaderId);
     auto invalidShaderId = dataHandler->LookupFormID(0x801, "ObjectManipulator.esp");
     auto invalidShader = RE::TESForm::LookupByID<RE::TESEffectShader>(invalidShaderId);
+
 
     shaders[ValidState::Valid] = validShader;
     shaders[ValidState::Error] = invalidShader;
@@ -95,8 +96,8 @@ void ObjectManipulationManager::Pick(RE::TESObjectREFR* refr) {
         ctrlKey = false;
         pickObject = refr;
         currentState = ValidState::None;
+        stateBuffer = ValidState::Valid;
         monitorState = MonitorState::Running;
-        
     }
 }
 
@@ -129,7 +130,7 @@ void ObjectManipulationManager::Release() {
         if (obj3d) {
             obj3d->SetCollisionLayer(layer);
         }
-        if (!obj3d->AsBhkRigidBody()) {
+        if (!obj3d->AsBhkRigidBody() && obj->GetFormType() != RE::FormType::NPC&& obj->GetFormType() != RE::FormType::ActorCharacter) {
             SKSE::GetTaskInterface()->AddTask([obj]() {
                 obj->Disable();
                 obj->Enable(false);
