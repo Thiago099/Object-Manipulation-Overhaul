@@ -134,10 +134,9 @@ void ObjectManipulationManager::Release() {
         if (obj3d) {
             obj3d->SetCollisionLayer(layer);
         }
-        SKSE::GetTaskInterface()->AddTask([obj3d, layer, obj]() {
-            auto pos = obj->GetPosition();
-            obj->SetPosition(pos);
-        });
+        if (!obj3d->AsBhkRigidBody()) {
+            obj->SetPosition(obj->GetPosition());
+        }
 }
 
 void ObjectManipulationManager::UpdatePlaceholderPosition() {
