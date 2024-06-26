@@ -135,7 +135,7 @@ void ObjectManipulationManager::Release() {
             obj3d->SetCollisionLayer(layer);
         }
         if (!obj3d->AsBhkRigidBody()) {
-            obj->SetPosition(obj->GetPosition());
+            obj->SetPosition(obj3d->worldBound.center);
         }
 }
 
