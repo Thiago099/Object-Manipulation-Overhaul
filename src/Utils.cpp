@@ -96,12 +96,6 @@ std::pair<RE::NiPoint3, RE::NiPoint3> Utils::PlayerCameraRayPos(std::function<bo
     auto [pos2, refr] = Utils::RaycastObjectRefr(
         player, rotation, pos, evaluator, 2000000000);
 
-    if (refr) {
-        logger::info("refr: {:x}", refr->GetFormID());
-    } else {
-        logger::info("norfr");
-    }
-
     return std::pair<RE::NiPoint3, RE::NiPoint3>(pos, pos2);
 }
 RE::TESObjectREFR* Utils::PlayerCameraRayRefr(std::function<bool(RE::NiAVObject*)> const& evaluator, float raySize) {
