@@ -7,5 +7,4 @@ set(HEADER_FILES
 	include/HookBuilder.h
 	include/ObjectManipulationManager.h
 	include/Utils.h
-	include/Papyus.h
 )

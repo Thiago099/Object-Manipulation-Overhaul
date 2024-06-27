@@ -26,11 +26,10 @@ void ObjectManipulationManager::SetPlacementState(ValidState id) {
 
         for (auto [state, shader] : shaders) {
             if (state != id) {
-                Papyrus::Stop(shader, pickObject);
+                //Papyrus::Stop(shader, pickObject);
             }
         }
-        logger::trace("shader id: {}", id);
-        Papyrus::Play(shaders[id], pickObject);
+        pickObject->ApplyEffectShader(shaders[id]);
     }
 }
 
@@ -60,6 +59,7 @@ void ObjectManipulationManager::Install() {
 
     delete builder;
 }
+
 
 
 
@@ -105,7 +105,6 @@ void ObjectManipulationManager::Cancel() {
     monitorState = MonitorState::Idle;
     auto obj = pickObject;
     auto shader = shaders[currentState];
-    Papyrus::Stop(shader, obj);
     auto obj3d = pickObject->Get3D();
     auto layer = colisionLayer;
     if (obj3d) {
@@ -120,7 +119,7 @@ void ObjectManipulationManager::Release() {
         monitorState = MonitorState::Idle;
         auto obj = pickObject;
         auto shader = shaders[currentState];
-        SKSE::GetTaskInterface()->AddTask([shader, obj]() { Papyrus::Stop(shader, obj); });
+        //SKSE::GetTaskInterface()->AddTask([shader, obj]() { Papyrus::Stop(shader, obj); });
 
         auto obj3d = pickObject->Get3D();
         auto layer = colisionLayer;
@@ -155,6 +154,11 @@ void ObjectManipulationManager::UpdatePlaceholderPosition() {
 void ObjectManipulationManager::Update() {
     auto obj = pickObject;
 
+    if (!obj) {
+        monitorState = MonitorState::Idle;
+        return;
+    }
+
     auto state = &stateBuffer;
     auto [cameraPosition, rayPostion] = Utils::PlayerCameraRayPos();
     UpdatePlaceholderPosition();
@@ -162,8 +166,7 @@ void ObjectManipulationManager::Update() {
         
     Utils::SetAngle(
             obj,
-            RE::NiPoint3(obj->GetAngleX(), obj->GetAngleY(),
-                         std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) + angleOffset));
+            RE::NiPoint3(0, 0, std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) + angleOffset));
     obj->Update3DPosition(true);
 
     if (Utils::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
