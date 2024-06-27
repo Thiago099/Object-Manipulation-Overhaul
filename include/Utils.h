@@ -4,9 +4,10 @@
 namespace Utils {
     std::pair<RE::NiQuaternion, RE::NiPoint3> GetCameraData();
     std::pair<RE::NiPoint3, RE::NiPoint3> PlayerCameraRayPos();
-    RE::TESObjectREFR* PlayerCameraRayRefr();
+    RE::TESObjectREFR* PlayerCameraRayRefr(std::function<bool(RE::NiAVObject*)> const& evaluator, float raySize = 2000000000);
     RE::NiPoint3 Raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position);
-    RE::TESObjectREFR* RaycastObjectRefr(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position);
+    RE::TESObjectREFR* RaycastObjectRefr(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position,
+                                         std::function<bool(RE::NiAVObject*)> const& evaluator, float raySize);
     void SetPosition(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position);
     void SetAngle(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position);
 
@@ -27,14 +28,12 @@ namespace Utils {
 
             RE::NiAVObject* getAVObject();
         };
-
+        std::function<bool(RE::NiAVObject*)> const& evaluator;
     public:
-        RayCollector();
+        RayCollector(std::function<bool(RE::NiAVObject*)> const& evaluator);
         ~RayCollector() = default;
 
         virtual void AddRayHit(const RE::hkpCdBody& body, const RE::hkpShapeRayCastCollectorOutput& hitInfo);
-
-        inline void AddFilter(const RE::NiAVObject* obj) noexcept { objectFilter.push_back(obj); }
 
         const std::vector<HitResult>& GetHits();
 
@@ -46,7 +45,6 @@ namespace Utils {
         RE::hkpWorldRayCastOutput rayHit;  // 10
 
         std::vector<HitResult> hits{};
-        std::vector<const RE::NiAVObject*> objectFilter;
     };
 
 

@@ -97,12 +97,12 @@ std::pair<RE::NiPoint3, RE::NiPoint3> Utils::PlayerCameraRayPos() {
 
     return std::pair<RE::NiPoint3, RE::NiPoint3>(pos, pos2);
 }
-RE::TESObjectREFR* Utils::PlayerCameraRayRefr() {
+RE::TESObjectREFR* Utils::PlayerCameraRayRefr(std::function<bool(RE::NiAVObject*)> const& evaluator, float raySize) {
     auto player = RE::PlayerCharacter::GetSingleton();
 
     auto [rotation, pos] = GetCameraData();
 
-    return Utils::RaycastObjectRefr(player, rotation, pos);
+    return Utils::RaycastObjectRefr(player, rotation, pos, evaluator, raySize);
 }
 RE::NiPoint3 Utils::Raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position) {
     auto havokWorldScale = RE::bhkWorld::GetWorldScale();
@@ -132,26 +132,25 @@ RE::NiPoint3 Utils::Raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoi
     return hitpos;
 }
 
-RE::TESObjectREFR* Utils::RaycastObjectRefr(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position) {
+RE::TESObjectREFR* Utils::RaycastObjectRefr(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position,
+                                            std::function<bool(RE::NiAVObject*)> const& evaluator, float raySize) {
     auto havokWorldScale = RE::bhkWorld::GetWorldScale();
     RE::bhkPickData pick_data;
     RE::NiPoint3 ray_start, ray_end;
 
     ray_start = position;
-    ray_end = ray_start + rotate(2000000000, QuaternionToEuler(angle));
+    ray_end = ray_start + rotate(raySize, QuaternionToEuler(angle));
     pick_data.rayInput.from = ray_start * havokWorldScale;
     pick_data.rayInput.to = ray_end * havokWorldScale;
 
     auto dif = ray_start - ray_end;
 
-    auto collector = Utils::RayCollector();
+    auto collector = Utils::RayCollector(evaluator);
     collector.Reset();
     pick_data.rayHitCollectorA8 = reinterpret_cast<RE::hkpClosestRayHitCollector*>(&collector);
 
 	const auto ply = RE::PlayerCharacter::GetSingleton();
     if (!ply->parentCell) return {};
-
-    if (ply->loadedData && ply->loadedData->data3D) collector.AddFilter(ply->loadedData->data3D.get());
 
     auto physicsWorld = ply->parentCell->GetbhkWorld();
     if (physicsWorld) {
@@ -252,7 +251,8 @@ float Utils::DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b) {
 
 
 
-Utils::RayCollector::RayCollector() {}
+Utils::RayCollector::RayCollector(std::function<bool(RE::NiAVObject*)> const& evaluator)
+    : evaluator(evaluator){}
 
 void Utils::RayCollector::AddRayHit(const RE::hkpCdBody& body, const RE::hkpShapeRayCastCollectorOutput& hitInfo) {
     HitResult hit;
@@ -271,18 +271,12 @@ void Utils::RayCollector::AddRayHit(const RE::hkpCdBody& body, const RE::hkpShap
     const auto collisionObj = static_cast<const RE::hkpCollidable*>(hit.body);
     const auto flags = collisionObj->broadPhaseHandle.collisionFilterInfo;
 
-    //const uint64_t m = 1ULL << static_cast<uint64_t>(flags);
-    //constexpr uint64_t filter = 0x40122716;  //@TODO
-    //if ((m & filter) != 0) {
-        if (objectFilter.size() > 0) {
-            for (const auto filteredObj : objectFilter) {
-                if (hit.getAVObject() == filteredObj) return;
-            }
-        }
+    if (!evaluator(hit.getAVObject())) {
+        return;
+    }
 
-        earlyOutHitFraction = hit.hitFraction;
-        hits.push_back(std::move(hit));
-    //}
+    earlyOutHitFraction = hit.hitFraction;
+    hits.push_back(std::move(hit));
 }
 
 const std::vector<Utils::RayCollector::HitResult>& Utils::RayCollector::GetHits() { return hits; }
@@ -290,7 +284,6 @@ const std::vector<Utils::RayCollector::HitResult>& Utils::RayCollector::GetHits(
 void Utils::RayCollector::Reset() {
     earlyOutHitFraction = 1.0f;
     hits.clear();
-    objectFilter.clear();
 }
 
 RE::NiAVObject* Utils::RayCollector::HitResult::getAVObject() {

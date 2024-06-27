@@ -23,12 +23,6 @@ void ObjectManipulationManager::SetPlacementState(ValidState id) {
 
     if (id != currentState || currentState == ValidState::None) {
         currentState = id;
-
-        for (auto [state, shader] : shaders) {
-            if (state != id) {
-                //Papyrus::Stop(shader, pickObject);
-            }
-        }
         pickObject->ApplyEffectShader(shaders[id]);
     }
 }
@@ -126,12 +120,10 @@ void ObjectManipulationManager::Release() {
         if (obj3d) {
             obj3d->SetCollisionLayer(layer);
         }
-        if (!obj3d->AsBhkRigidBody() && obj->GetFormType() != RE::FormType::NPC&& obj->GetFormType() != RE::FormType::ActorCharacter) {
-            SKSE::GetTaskInterface()->AddTask([obj]() {
-                obj->Disable();
-                obj->Enable(false);
-            });
-        }
+        SKSE::GetTaskInterface()->AddTask([obj]() {
+            obj->Disable();
+            obj->Enable(false);
+        });
 }
 
 void ObjectManipulationManager::UpdatePlaceholderPosition() {
@@ -149,6 +141,10 @@ void ObjectManipulationManager::UpdatePlaceholderPosition() {
                 obj3d->SetCollisionLayer(RE::COL_LAYER::kNonCollidable);
             }
         }
+        auto shader = shaders[currentState];
+        SKSE::GetTaskInterface()->AddTask([shader]() { 
+            pickObject->ApplyEffectShader(shader);
+        });
     }
 }
 void ObjectManipulationManager::Update() {
@@ -272,8 +268,16 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
                 if (button->IsDown() && button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
                     if (static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode()) ==
                         RE::BSWin32MouseDevice::Key::kMiddleButton) {
-                        
-                        if (auto ref = Utils::PlayerCameraRayRefr()) {
+                        //TODO: Check for nullptrs
+                        auto player = RE::PlayerCharacter::GetSingleton();
+                        auto player3d = player->loadedData->data3D.get();
+                        const auto evaluator = [player3d](RE::NiAVObject* obj) {
+                            if (obj == player3d) {
+                                return false;
+                            }
+                            return true;
+                        };
+                        if (auto ref = Utils::PlayerCameraRayRefr(evaluator, 1000)){
                             Pick(ref);
                         }
 
