@@ -113,9 +113,6 @@ void ObjectManipulationManager::Cancel() {
     }
     SKSE::GetTaskInterface()->AddTask([obj3d, layer, obj]() {
         MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(), lastPos, lastAngle);
-        obj->Disable();
-        obj->Enable(false);
-
     });
 
 }
@@ -135,7 +132,6 @@ void ObjectManipulationManager::Release() {
                 obj->Disable();
                 obj->Enable(false);
             });
-
         }
 }
 
@@ -147,29 +143,34 @@ void ObjectManipulationManager::UpdatePlaceholderPosition() {
                     player->GetWorldspace(),
                     player->GetPosition(), pickObject->GetAngle());
         currentState = ValidState::None;
+        auto obj3d = pickObject->Get3D();
+        if (obj3d) {
+            auto currentLayer = obj3d->GetCollisionLayer();
+            if (currentLayer != RE::COL_LAYER::kNonCollidable) {
+                obj3d->SetCollisionLayer(RE::COL_LAYER::kNonCollidable);
+            }
+        }
     }
 }
 void ObjectManipulationManager::Update() {
     auto obj = pickObject;
 
     auto state = &stateBuffer;
-    SKSE::GetTaskInterface()->AddTask([obj, state]() {
-        auto [cameraPosition, rayPostion] = Utils::PlayerCameraRayPos();
-        UpdatePlaceholderPosition();
-        Utils::SetPosition(obj, rayPostion+positionOffset);
+    auto [cameraPosition, rayPostion] = Utils::PlayerCameraRayPos();
+    UpdatePlaceholderPosition();
+    Utils::SetPosition(obj, rayPostion+positionOffset);
         
-        Utils::SetAngle(
+    Utils::SetAngle(
             obj,
             RE::NiPoint3(obj->GetAngleX(), obj->GetAngleY(),
                          std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) + angleOffset));
-        obj->Update3DPosition(true);
+    obj->Update3DPosition(true);
 
-        if (Utils::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
-            *state = ValidState::Valid;
-        } else {
-            *state = ValidState::Error;
-        }
-    });
+    if (Utils::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
+        *state = ValidState::Valid;
+    } else {
+        *state = ValidState::Error;
+    }
 
     SetPlacementState(stateBuffer);
 
@@ -215,7 +216,7 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
                         case RE::BSWin32MouseDevice::Key::kWheelUp:
                             suppress = true;
                             if (ctrlKey) {
-                                positionOffset.z += 0.3f;
+                                positionOffset.z += 1.f;
                             } else {
                                 angleOffset = normalizeAngle(angleOffset + M_PI / 30);
                             }
@@ -223,7 +224,7 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
                         case RE::BSWin32MouseDevice::Key::kWheelDown:
                             suppress = true;
                             if (ctrlKey) {
-                                positionOffset.z -= 0.3f;
+                                positionOffset.z -= 1.f;
                             } else {
                                 angleOffset = normalizeAngle(angleOffset - M_PI / 30);
                             }
@@ -268,12 +269,10 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
                 if (button->IsDown() && button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
                     if (static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode()) ==
                         RE::BSWin32MouseDevice::Key::kMiddleButton) {
-                        SKSE::GetTaskInterface()->AddTask([]() { 
                         
-                            if (auto ref = Utils::PlayerCameraRayRefr()) {
-                                Pick(ref);
-                            }
-                        });
+                        if (auto ref = Utils::PlayerCameraRayRefr()) {
+                            Pick(ref);
+                        }
 
                     }
                 }
