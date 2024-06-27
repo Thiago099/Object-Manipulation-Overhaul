@@ -87,9 +87,6 @@ void ObjectManipulationManager::Release() {
         auto obj = pickObject;
         auto shader = shaders[currentState];
         auto obj3d = pickObject->Get3D();
-        if (!obj->CanBeMoved()) {
-            obj->MoveTo(obj);
-        }
 }
 
 void ObjectManipulationManager::UpdatePlaceholderPosition() {
