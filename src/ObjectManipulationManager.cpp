@@ -61,15 +61,6 @@ void ObjectManipulationManager::Install() {
 void ObjectManipulationManager::Pick(RE::TESObjectREFR* refr) {
     if (refr) {
 
-        auto obj3d = refr->Get3D();
-        if (obj3d) {
-            auto currentLayer = obj3d->GetCollisionLayer();
-            colisionLayer = currentLayer;
-            if (currentLayer != RE::COL_LAYER::kNonCollidable) {
-                obj3d->SetCollisionLayer(RE::COL_LAYER::kNonCollidable);
-            }
-        }
-
         lastPos = refr->GetPosition();
         lastAngle = refr->GetAngle();
 
@@ -100,11 +91,7 @@ void ObjectManipulationManager::Cancel() {
     auto obj = pickObject;
     auto shader = shaders[currentState];
     auto obj3d = pickObject->Get3D();
-    auto layer = colisionLayer;
-    if (obj3d) {
-        obj3d->SetCollisionLayer(layer);
-    }
-    SKSE::GetTaskInterface()->AddTask([obj3d, layer, obj]() {
+    SKSE::GetTaskInterface()->AddTask([obj3d, obj]() {
         MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(), lastPos, lastAngle);
     });
 
@@ -116,10 +103,6 @@ void ObjectManipulationManager::Release() {
         //SKSE::GetTaskInterface()->AddTask([shader, obj]() { Papyrus::Stop(shader, obj); });
 
         auto obj3d = pickObject->Get3D();
-        auto layer = colisionLayer;
-        if (obj3d) {
-            obj3d->SetCollisionLayer(layer);
-        }
         SKSE::GetTaskInterface()->AddTask([obj]() {
             obj->Disable();
             obj->Enable(false);
@@ -134,13 +117,6 @@ void ObjectManipulationManager::UpdatePlaceholderPosition() {
                     player->GetWorldspace(),
                     player->GetPosition(), pickObject->GetAngle());
         currentState = ValidState::None;
-        auto obj3d = pickObject->Get3D();
-        if (obj3d) {
-            auto currentLayer = obj3d->GetCollisionLayer();
-            if (currentLayer != RE::COL_LAYER::kNonCollidable) {
-                obj3d->SetCollisionLayer(RE::COL_LAYER::kNonCollidable);
-            }
-        }
         auto shader = shaders[currentState];
         SKSE::GetTaskInterface()->AddTask([shader]() { 
             pickObject->ApplyEffectShader(shader);
@@ -156,7 +132,23 @@ void ObjectManipulationManager::Update() {
     }
 
     auto state = &stateBuffer;
-    auto [cameraPosition, rayPostion] = Utils::PlayerCameraRayPos();
+
+    
+    auto player3d = Utils::GetPlayer3d();
+
+    auto pick3d = pickObject->Get3D();
+
+    const auto evaluator = [player3d, pick3d](RE::NiAVObject* obj) {
+        if (obj == player3d) {
+            return false;
+        }
+        if (obj == pick3d) {
+            return false;
+        }
+        return true;
+    };
+
+    auto [cameraPosition, rayPostion] = Utils::PlayerCameraRayPos(evaluator);
     UpdatePlaceholderPosition();
     Utils::SetPosition(obj, rayPostion+positionOffset);
         
@@ -176,6 +168,8 @@ void ObjectManipulationManager::Update() {
         //logger::info("Water: {}, name: {}", obj->IsInWater(),
         //                 RE::TES::GetSingleton()->GetLandTexture(rayPostion)->materialType->materialName);
 }
+
+
 
 
 
@@ -269,8 +263,10 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
                     if (static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode()) ==
                         RE::BSWin32MouseDevice::Key::kMiddleButton) {
                         //TODO: Check for nullptrs
-                        auto player = RE::PlayerCharacter::GetSingleton();
-                        auto player3d = player->loadedData->data3D.get();
+
+                        auto player3d = Utils::GetPlayer3d();
+
+
                         const auto evaluator = [player3d](RE::NiAVObject* obj) {
                             if (obj == player3d) {
                                 return false;

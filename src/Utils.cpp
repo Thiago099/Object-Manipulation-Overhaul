@@ -87,13 +87,20 @@ std::pair<RE::NiQuaternion, RE::NiPoint3> Utils::GetCameraData() {
     return std::pair(rotation, translation);
 }
 
-std::pair<RE::NiPoint3, RE::NiPoint3> Utils::PlayerCameraRayPos() {
+std::pair<RE::NiPoint3, RE::NiPoint3> Utils::PlayerCameraRayPos(std::function<bool(RE::NiAVObject*)> const& evaluator) {
 
     auto player = RE::PlayerCharacter::GetSingleton();
 
     auto [rotation, pos] = GetCameraData();
 
-    auto pos2 = Utils::Raycast(player, rotation, pos);
+    auto [pos2, refr] = Utils::RaycastObjectRefr(
+        player, rotation, pos, evaluator, 2000000000);
+
+    if (refr) {
+        logger::info("refr: {:x}", refr->GetFormID());
+    } else {
+        logger::info("norfr");
+    }
 
     return std::pair<RE::NiPoint3, RE::NiPoint3>(pos, pos2);
 }
@@ -102,7 +109,8 @@ RE::TESObjectREFR* Utils::PlayerCameraRayRefr(std::function<bool(RE::NiAVObject*
 
     auto [rotation, pos] = GetCameraData();
 
-    return Utils::RaycastObjectRefr(player, rotation, pos, evaluator, raySize);
+    auto [pos2, refr] = Utils::RaycastObjectRefr(player, rotation, pos, evaluator, raySize);
+    return refr;
 }
 RE::NiPoint3 Utils::Raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position) {
     auto havokWorldScale = RE::bhkWorld::GetWorldScale();
@@ -132,7 +140,7 @@ RE::NiPoint3 Utils::Raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoi
     return hitpos;
 }
 
-RE::TESObjectREFR* Utils::RaycastObjectRefr(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position,
+std::pair<RE::NiPoint3, RE::TESObjectREFR*> Utils::RaycastObjectRefr(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position,
                                             std::function<bool(RE::NiAVObject*)> const& evaluator, float raySize) {
     auto havokWorldScale = RE::bhkWorld::GetWorldScale();
     RE::bhkPickData pick_data;
@@ -175,15 +183,21 @@ RE::TESObjectREFR* Utils::RaycastObjectRefr(RE::Actor* caster, RE::NiQuaternion 
         }
     }
 
-    if (!best.body) return nullptr;
+
+    if (!best.body) {
+        return std::pair(ray_end, nullptr);
+    }
+
+    auto hitpos = ray_start + (ray_end - ray_start) * best.hitFraction;
+
     auto av = best.getAVObject();
 
     if (av) {
         auto ref = av->GetUserData();
 
-        return ref;
+        return std::pair(hitpos, ref);
     }
-    return nullptr;
+    return std::pair(hitpos, nullptr);
 }
 
 
@@ -236,6 +250,20 @@ float Utils::DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b) {
 
 
 
+RE::NiObject* Utils::GetPlayer3d() {
+    auto refr = RE::PlayerCharacter::GetSingleton();
+    if (!refr) {
+        return nullptr;
+    }
+    if (!refr->loadedData) {
+        return nullptr;
+    }
+    if (!refr->loadedData->data3D) {
+        return nullptr;
+    }
+    return refr->loadedData->data3D.get();
+}
+
 
 
 
@@ -271,12 +299,17 @@ void Utils::RayCollector::AddRayHit(const RE::hkpCdBody& body, const RE::hkpShap
     const auto collisionObj = static_cast<const RE::hkpCollidable*>(hit.body);
     const auto flags = collisionObj->broadPhaseHandle.collisionFilterInfo;
 
-    if (!evaluator(hit.getAVObject())) {
-        return;
+    const uint64_t m = 1ULL << static_cast<uint64_t>(flags);
+    constexpr uint64_t filter = 0x40122716;  //@TODO
+    if ((m & filter) != 0) {
+        if (!evaluator(hit.getAVObject())) {
+            return;
+        }
+        earlyOutHitFraction = hit.hitFraction;
+        hits.push_back(std::move(hit));
     }
 
-    earlyOutHitFraction = hit.hitFraction;
-    hits.push_back(std::move(hit));
+
 }
 
 const std::vector<Utils::RayCollector::HitResult>& Utils::RayCollector::GetHits() { return hits; }

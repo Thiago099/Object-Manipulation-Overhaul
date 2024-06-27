@@ -3,10 +3,11 @@
 
 namespace Utils {
     std::pair<RE::NiQuaternion, RE::NiPoint3> GetCameraData();
-    std::pair<RE::NiPoint3, RE::NiPoint3> PlayerCameraRayPos();
+    std::pair<RE::NiPoint3, RE::NiPoint3> PlayerCameraRayPos(std::function<bool(RE::NiAVObject*)> const& evaluator);
     RE::TESObjectREFR* PlayerCameraRayRefr(std::function<bool(RE::NiAVObject*)> const& evaluator, float raySize = 2000000000);
     RE::NiPoint3 Raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position);
-    RE::TESObjectREFR* RaycastObjectRefr(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position,
+    std::pair<RE::NiPoint3, RE::TESObjectREFR*> RaycastObjectRefr(RE::Actor* caster, RE::NiQuaternion angle,
+                                                                  RE::NiPoint3 position,
                                          std::function<bool(RE::NiAVObject*)> const& evaluator, float raySize);
     void SetPosition(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position);
     void SetAngle(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position);
@@ -14,6 +15,7 @@ namespace Utils {
     void StopVisualEffect(RE::TESObjectREFR* r, void* e);
     float DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b);
 
+    RE::NiObject* GetPlayer3d();
 
 
 
