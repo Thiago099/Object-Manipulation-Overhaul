@@ -63,20 +63,9 @@ void ObjectManipulationManager::Pick(RE::TESObjectREFR* refr) {
 
         lastPos = refr->GetPosition();
         lastAngle = refr->GetAngle();
-
-        //placeholder->SetModel(modelBase->GetModel());
-        //CreatePlaceholder();
-        //if (!placeholderRef) {
-        //    return;
-        //}
-
-        //auto scale = baseObject->GetScale();
-        //Papyrus::SetScale(placeholderRef, scale);
-
-        auto pos = refr->GetPosition();
-        auto angle = refr->GetAngle().z;
         auto [cameraAngle, cameraPosition] = Utils::GetCameraData();
-        angleOffset = normalizeAngle(angle - std::atan2(cameraPosition.x - pos.x, cameraPosition.y - pos.y));
+        angleOffset =
+            normalizeAngle(refr->GetAngle().z - std::atan2(cameraPosition.x - lastPos.x, cameraPosition.y - lastPos.y));
         positionOffset = RE::NiPoint3(0, 0, 0);
         ctrlKey = false;
         pickObject = refr;
@@ -91,22 +80,16 @@ void ObjectManipulationManager::Cancel() {
     auto obj = pickObject;
     auto shader = shaders[currentState];
     auto obj3d = pickObject->Get3D();
-    SKSE::GetTaskInterface()->AddTask([obj3d, obj]() {
-        MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(), lastPos, lastAngle);
-    });
-
+    MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(), lastPos, lastAngle);
 }
 void ObjectManipulationManager::Release() {
         monitorState = MonitorState::Idle;
         auto obj = pickObject;
         auto shader = shaders[currentState];
-        //SKSE::GetTaskInterface()->AddTask([shader, obj]() { Papyrus::Stop(shader, obj); });
-
         auto obj3d = pickObject->Get3D();
-        SKSE::GetTaskInterface()->AddTask([obj]() {
-            obj->Disable();
-            obj->Enable(false);
-        });
+        if (!obj->CanBeMoved()) {
+            obj->MoveTo(obj);
+        }
 }
 
 void ObjectManipulationManager::UpdatePlaceholderPosition() {
@@ -151,18 +134,10 @@ void ObjectManipulationManager::Update() {
     auto [cameraPosition, rayPostion] = Utils::PlayerCameraRayPos(evaluator);
     UpdatePlaceholderPosition();
     Utils::SetPosition(obj, rayPostion+positionOffset);
-        
     Utils::SetAngle(
             obj,
             RE::NiPoint3(0, 0, std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) + angleOffset));
     obj->Update3DPosition(true);
-
-    if (Utils::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
-        *state = ValidState::Valid;
-    } else {
-        *state = ValidState::Error;
-    }
-
     SetPlacementState(stateBuffer);
 
         //logger::info("Water: {}, name: {}", obj->IsInWater(),

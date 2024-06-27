@@ -106,33 +106,6 @@ RE::TESObjectREFR* Utils::PlayerCameraRayRefr(std::function<bool(RE::NiAVObject*
     auto [pos2, refr] = Utils::RaycastObjectRefr(player, rotation, pos, evaluator, raySize);
     return refr;
 }
-RE::NiPoint3 Utils::Raycast(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position) {
-    auto havokWorldScale = RE::bhkWorld::GetWorldScale();
-    RE::bhkPickData pick_data;
-    RE::NiPoint3 ray_start, ray_end;
-
-    ray_start = position;
-    ray_end = ray_start + rotate(2000000000, QuaternionToEuler(angle));
-    pick_data.rayInput.from = ray_start * havokWorldScale;
-    pick_data.rayInput.to = ray_end * havokWorldScale;
-
-    uint32_t collisionFilterInfo = 0;
-    caster->GetCollisionFilterInfo(collisionFilterInfo);
-    pick_data.rayInput.filterInfo = (static_cast<uint32_t>(collisionFilterInfo >> 16) << 16) |
-                                    static_cast<uint32_t>(RE::COL_LAYER::kCharController);
-
-    caster->GetParentCell()->GetbhkWorld()->PickObject(pick_data);
-
-
-
-    RE::NiPoint3 hitpos;
-    if (pick_data.rayOutput.HasHit()) {
-        hitpos = ray_start + (ray_end - ray_start) * pick_data.rayOutput.hitFraction;
-    } else {
-        hitpos = ray_end;
-    }
-    return hitpos;
-}
 
 std::pair<RE::NiPoint3, RE::TESObjectREFR*> Utils::RaycastObjectRefr(RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position,
                                             std::function<bool(RE::NiAVObject*)> const& evaluator, float raySize) {
