@@ -207,7 +207,16 @@ float Utils::DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b) {
 
 
 
-
+double Utils::NormalizeAngle(double angle_rad) {
+    // Normalize angle to be within [0, 2*pi)
+    while (angle_rad < 0) {
+        angle_rad += 2 * M_PI;
+    }
+    while (angle_rad >= 2 * M_PI) {
+        angle_rad -= 2 * M_PI;
+    }
+    return angle_rad;
+}
 
 
 
@@ -219,6 +228,23 @@ RE::NiColorA Utils::CreateColor(uint32_t color) {
     float alpha = (color & 0x000000FF) / 255.0f;
 
     return RE::NiColorA(red, green, blue, alpha);
+}
+
+bool Utils::IsStatic(RE::COL_LAYER& col) {
+    // logger::trace("col: {}", static_cast<int>(col));
+    switch (col) {
+        case RE::COL_LAYER::kUnidentified:
+        case RE::COL_LAYER::kStatic:
+        case RE::COL_LAYER::kTrees:
+        case RE::COL_LAYER::kAnimStatic:
+        case RE::COL_LAYER::kTerrain:
+        case RE::COL_LAYER::kTrap:
+        case RE::COL_LAYER::kGround:
+        case RE::COL_LAYER::kPortal:
+            return true;
+        default:
+            return false;
+    }
 }
 
 

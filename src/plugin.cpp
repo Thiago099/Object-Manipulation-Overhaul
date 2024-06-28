@@ -6,6 +6,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         ObjectManipulationManager::Install();
     }
     if (message->type == SKSE::MessagingInterface::kPostLoadGame || message->type == SKSE::MessagingInterface::kNewGame) {
+        ObjectManipulationManager::Clean();
     }
 }
 

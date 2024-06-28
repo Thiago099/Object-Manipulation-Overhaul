@@ -47,20 +47,21 @@ class ObjectManipulationManager {
         static inline REL::Relocation<decltype(thunk)> originalFunction;
     };
 
+    static void ResetCollision();
+    static void Update();
+    static bool ProcessActiveInputState(RE::InputEvent* current);
+    static void ProcessIdleInputState(RE::InputEvent* current);
+    static void UpdatePlaceholderPosition();
+
     public:
 
-   static void Install();
+    static void Clean();
+    static void Install();
+    static void StartDraggingObject(RE::TESObjectREFR* obj);
+    static void CancelDrag();
+    static void CommitDrag();
 
-   static void Pick(RE::TESObjectREFR* obj);
-   static void ResetCollision();
-   static void Cancel();
-   static void Release();
 
-   static void UpdatePlaceholderPosition();
-
-   static void Update();
-
-   
 
 
 };

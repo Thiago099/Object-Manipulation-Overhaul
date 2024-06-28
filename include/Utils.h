@@ -14,7 +14,11 @@ namespace Utils {
     void StopVisualEffect(RE::TESObjectREFR* r, void* e);
     float DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b);
 
+    double NormalizeAngle(double angle_rad);
+
     RE::NiColorA CreateColor(uint32_t color);
+
+    bool IsStatic(RE::COL_LAYER& col);
 
     RE::NiObject* GetPlayer3d();
 
