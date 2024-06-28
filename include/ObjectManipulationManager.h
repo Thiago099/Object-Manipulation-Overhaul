@@ -55,6 +55,7 @@ class ObjectManipulationManager {
    static void Install();
 
    static void Pick(RE::TESObjectREFR* obj);
+   static void ResetCollision();
    static void Cancel();
    static void Release();
 

@@ -57,7 +57,23 @@ void ObjectManipulationManager::Install() {
 
 
 
+bool IsStatic(RE::COL_LAYER & col) {
 
+    //logger::trace("col: {}", static_cast<int>(col));
+    switch (col) {
+        case RE::COL_LAYER::kUnidentified:
+        case RE::COL_LAYER::kStatic: 
+        case RE::COL_LAYER::kTrees:
+        case RE::COL_LAYER::kAnimStatic:
+        case RE::COL_LAYER::kTerrain:
+        case RE::COL_LAYER::kTrap:
+        case RE::COL_LAYER::kGround:
+        case RE::COL_LAYER::kPortal:
+            return true;
+        default:
+            return false;
+    }
+}
 void ObjectManipulationManager::Pick(RE::TESObjectREFR* refr) {
     if (refr) {
 
@@ -72,21 +88,39 @@ void ObjectManipulationManager::Pick(RE::TESObjectREFR* refr) {
         currentState = ValidState::None;
         stateBuffer = ValidState::Valid;
         monitorState = MonitorState::Running;
+
+        auto obj3d = refr->Get3D();
+        colisionLayer = obj3d->GetCollisionLayer();
+
+        if (IsStatic(colisionLayer)) {
+            obj3d->SetCollisionLayer(RE::COL_LAYER::kNonCollidable);
+        }
     }
 }
-
+void ObjectManipulationManager::ResetCollision() {
+    auto obj3d = pickObject->Get3D();
+    auto current = obj3d->GetCollisionLayer();
+    if (current != colisionLayer) {
+        obj3d->SetCollisionLayer(colisionLayer);
+    }
+}
 void ObjectManipulationManager::Cancel() {
     monitorState = MonitorState::Idle;
     auto obj = pickObject;
     auto shader = shaders[currentState];
     auto obj3d = pickObject->Get3D();
+    ResetCollision();
     MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(), lastPos, lastAngle);
 }
 void ObjectManipulationManager::Release() {
-        monitorState = MonitorState::Idle;
-        auto obj = pickObject;
-        auto shader = shaders[currentState];
-        auto obj3d = pickObject->Get3D();
+    monitorState = MonitorState::Idle;
+    auto obj = pickObject;
+    auto shader = shaders[currentState];
+    auto obj3d = pickObject->Get3D();
+    ResetCollision();
+    if (IsStatic(colisionLayer)) {
+        obj->SetPosition(obj->GetPosition());
+    }
 }
 
 void ObjectManipulationManager::UpdatePlaceholderPosition() {
@@ -129,16 +163,20 @@ void ObjectManipulationManager::Update() {
     };
 
     auto [cameraPosition, rayPostion] = Utils::PlayerCameraRayPos(evaluator);
+
     UpdatePlaceholderPosition();
+
     Utils::SetPosition(obj, rayPostion+positionOffset);
     Utils::SetAngle(
             obj,
             RE::NiPoint3(0, 0, std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) + angleOffset));
+    
     obj->Update3DPosition(true);
+
     SetPlacementState(stateBuffer);
 
-        //logger::info("Water: {}, name: {}", obj->IsInWater(),
-        //                 RE::TES::GetSingleton()->GetLandTexture(rayPostion)->materialType->materialName);
+    //logger::info("Water: {}, name: {}", obj->IsInWater(),
+    //                 RE::TES::GetSingleton()->GetLandTexture(rayPostion)->materialType->materialName);
 }
 
 
