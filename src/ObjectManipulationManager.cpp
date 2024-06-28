@@ -11,24 +11,22 @@ double normalizeAngle(double angle_rad) {
     return angle_rad;
 }
 
-void MoveTo_Impl(RE::TESObjectREFR* ref, const RE::ObjectRefHandle& a_targetHandle, RE::TESObjectCELL* a_targetCell,
-                 RE::TESWorldSpace* a_selfWorldSpace, const RE::NiPoint3& a_position, const RE::NiPoint3& a_rotation) {
-    using func_t = decltype(&MoveTo_Impl);
-    REL::Relocation<func_t> func{RE::Offset::TESObjectREFR::MoveTo};
-    return func(ref, a_targetHandle, a_targetCell, a_selfWorldSpace, a_position, a_rotation);
-}
 
 
 void ObjectManipulationManager::SetPlacementState(ValidState id) {
-
     if (id != currentState || currentState == ValidState::None) {
         currentState = id;
-        pickObject->ApplyEffectShader(shaders[id]);
+        auto obj = pickObject;
+        auto color = stateColorMap[id];
+        SKSE::GetTaskInterface()->AddTask([obj, color]() {
+            if (auto obj3d = obj->Get3D()) {
+                obj3d->TintScenegraph(color);
+            } else {
+                logger::info(":(");
+            }
+        });
     }
 }
-
-
-
 
 RE::TESEffectShader* LookUpShader(uint32_t id) {
     const auto dataHandler = RE::TESDataHandler::GetSingleton();
@@ -40,22 +38,10 @@ void ObjectManipulationManager::Install() {
     auto builder = new HookBuilder();
     builder->AddCall<ProcessInputQueueHook, 5, 14>(67315, 0x7B, 68617, 0x7B, 0xC519E0, 0x81);
     builder->Install();
-
-    const auto dataHandler = RE::TESDataHandler::GetSingleton();
-    auto validShaderId = dataHandler->LookupFormID(0x800, "ObjectManipulator.esp");
-    auto validShader = RE::TESForm::LookupByID<RE::TESEffectShader>(validShaderId);
-    auto invalidShaderId = dataHandler->LookupFormID(0x801, "ObjectManipulator.esp");
-    auto invalidShader = RE::TESForm::LookupByID<RE::TESEffectShader>(invalidShaderId);
-
-
-    shaders[ValidState::Valid] = validShader;
-    shaders[ValidState::Error] = invalidShader;
-
     delete builder;
+    stateColorMap[ValidState::Valid] = Utils::CreateColor(0x00CCFFCC);
+    stateColorMap[ValidState::Error] = Utils::CreateColor(0xFF0000CC);
 }
-
-
-
 
 bool IsStatic(RE::COL_LAYER & col) {
 
@@ -74,6 +60,7 @@ bool IsStatic(RE::COL_LAYER & col) {
             return false;
     }
 }
+
 void ObjectManipulationManager::Pick(RE::TESObjectREFR* refr) {
     if (refr) {
 
@@ -97,25 +84,28 @@ void ObjectManipulationManager::Pick(RE::TESObjectREFR* refr) {
         }
     }
 }
+
 void ObjectManipulationManager::ResetCollision() {
-    auto obj3d = pickObject->Get3D();
-    auto current = obj3d->GetCollisionLayer();
-    if (current != colisionLayer) {
-        obj3d->SetCollisionLayer(colisionLayer);
+    if (auto obj3d = pickObject->Get3D()) {
+        obj3d->TintScenegraph(RE::NiColorA(0x0));
+        auto current = obj3d->GetCollisionLayer();
+        if (current != colisionLayer) {
+            obj3d->SetCollisionLayer(colisionLayer);
+        }
     }
 }
+
 void ObjectManipulationManager::Cancel() {
     monitorState = MonitorState::Idle;
     auto obj = pickObject;
-    auto shader = shaders[currentState];
     auto obj3d = pickObject->Get3D();
     ResetCollision();
-    MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(), lastPos, lastAngle);
+    Utils::MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(), lastPos, lastAngle);
 }
+
 void ObjectManipulationManager::Release() {
     monitorState = MonitorState::Idle;
     auto obj = pickObject;
-    auto shader = shaders[currentState];
     auto obj3d = pickObject->Get3D();
     ResetCollision();
     if (IsStatic(colisionLayer)) {
@@ -127,14 +117,10 @@ void ObjectManipulationManager::UpdatePlaceholderPosition() {
     auto player = RE::PlayerCharacter::GetSingleton();
     if (pickObject->GetWorldspace() != player->GetWorldspace() ||
         pickObject->GetParentCell() != player->GetParentCell()) {
-        MoveTo_Impl(pickObject, RE::ObjectRefHandle(), player->GetParentCell(),
+        Utils::MoveTo_Impl(pickObject, RE::ObjectRefHandle(), player->GetParentCell(),
                     player->GetWorldspace(),
                     player->GetPosition(), pickObject->GetAngle());
         currentState = ValidState::None;
-        auto shader = shaders[currentState];
-        SKSE::GetTaskInterface()->AddTask([shader]() { 
-            pickObject->ApplyEffectShader(shader);
-        });
     }
 }
 void ObjectManipulationManager::Update() {
@@ -145,9 +131,6 @@ void ObjectManipulationManager::Update() {
         return;
     }
 
-    auto state = &stateBuffer;
-
-    
     auto player3d = Utils::GetPlayer3d();
 
     auto pick3d = pickObject->Get3D();
@@ -173,15 +156,16 @@ void ObjectManipulationManager::Update() {
     
     obj->Update3DPosition(true);
 
-    SetPlacementState(stateBuffer);
+    if (Utils::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
+        SetPlacementState(ValidState::Valid);
+    } else {
+        SetPlacementState(ValidState::Error);
+    }
+
 
     //logger::info("Water: {}, name: {}", obj->IsInWater(),
     //                 RE::TES::GetSingleton()->GetLandTexture(rayPostion)->materialType->materialName);
 }
-
-
-
-
 
 
 void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
@@ -272,10 +256,8 @@ void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<
                 if (button->IsDown() && button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
                     if (static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode()) ==
                         RE::BSWin32MouseDevice::Key::kMiddleButton) {
-                        //TODO: Check for nullptrs
 
                         auto player3d = Utils::GetPlayer3d();
-
 
                         const auto evaluator = [player3d](RE::NiAVObject* obj) {
                             if (obj == player3d) {

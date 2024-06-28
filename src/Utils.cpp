@@ -211,6 +211,15 @@ float Utils::DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b) {
 
 
 
+RE::NiColorA Utils::CreateColor(uint32_t color) {
+    // Extracting RGB components from the hex value
+    float red = ((color & 0xFF000000) >> 24) / 255.0f;
+    float green = ((color & 0x00FF0000) >> 16) / 255.0f;
+    float blue = ((color & 0x0000FF00) >> 8) / 255.0f;
+    float alpha = (color & 0x000000FF) / 255.0f;
+
+    return RE::NiColorA(red, green, blue, alpha);
+}
 
 
 
@@ -234,7 +243,12 @@ RE::NiObject* Utils::GetPlayer3d() {
 
 
 
-
+void Utils::MoveTo_Impl(RE::TESObjectREFR* ref, const RE::ObjectRefHandle& a_targetHandle, RE::TESObjectCELL* a_targetCell,
+                 RE::TESWorldSpace* a_selfWorldSpace, const RE::NiPoint3& a_position, const RE::NiPoint3& a_rotation) {
+    using func_t = decltype(&MoveTo_Impl);
+    REL::Relocation<func_t> func{RE::Offset::TESObjectREFR::MoveTo};
+    return func(ref, a_targetHandle, a_targetCell, a_selfWorldSpace, a_position, a_rotation);
+}
 
 
 

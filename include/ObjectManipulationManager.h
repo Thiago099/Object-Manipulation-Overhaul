@@ -1,6 +1,7 @@
 #pragma once
 #include "Utils.h"
 #include "HookBuilder.h"
+
 #define M_PI 3.14159265358979323846
 
 class ObjectManipulationManager {
@@ -22,9 +23,6 @@ class ObjectManipulationManager {
 
     static inline RE::NiPoint3 cd = {};
 
-
-    static inline std::map<ValidState, RE::TESEffectShader*> shaders;
-
     static inline RE::COL_LAYER colisionLayer;
     static inline RE::TESObjectREFR* pickObject;
     static inline ValidState stateBuffer = ValidState::None;
@@ -37,14 +35,13 @@ class ObjectManipulationManager {
 
     static inline bool ctrlKey = false;
 
+    static inline std::map<ValidState, RE::NiColorA> stateColorMap;
+
+
 
     static inline float angleOffset = M_PI;
     static inline RE::NiPoint3 positionOffset;
-
     static void SetPlacementState(ValidState id);
-
-    static void CreatePlaceholder();
-
     struct ProcessInputQueueHook {
         static void thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher, RE::InputEvent* const* a_event);
         static inline REL::Relocation<decltype(thunk)> originalFunction;

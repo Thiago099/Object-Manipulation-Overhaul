@@ -14,7 +14,13 @@ namespace Utils {
     void StopVisualEffect(RE::TESObjectREFR* r, void* e);
     float DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b);
 
+    RE::NiColorA CreateColor(uint32_t color);
+
     RE::NiObject* GetPlayer3d();
+
+    void MoveTo_Impl(RE::TESObjectREFR* ref, const RE::ObjectRefHandle& a_targetHandle, RE::TESObjectCELL* a_targetCell,
+                     RE::TESWorldSpace* a_selfWorldSpace, const RE::NiPoint3& a_position,
+                     const RE::NiPoint3& a_rotation);
 
 
 
