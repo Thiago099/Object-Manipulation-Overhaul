@@ -129,7 +129,7 @@ void ObjectManipulationManager::UpdatePlaceholderPosition() {
 void ObjectManipulationManager::Update() {
     auto obj = pickObject;
 
-    if (!obj) {
+    if (!obj || !obj->Get3D()) {
         monitorState = MonitorState::Idle;
         return;
     }
