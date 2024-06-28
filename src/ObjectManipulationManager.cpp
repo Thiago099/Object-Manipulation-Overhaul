@@ -5,8 +5,8 @@
     builder->AddCall<ProcessInputQueueHook, 5, 14>(67315, 0x7B, 68617, 0x7B, 0xC519E0, 0x81);
     builder->Install();
     delete builder;
-    stateColorMap[ValidState::Valid] = Utils::CreateColor(0x00CCFFCC);
-    stateColorMap[ValidState::Error] = Utils::CreateColor(0xFF0000CC);
+    stateColorMap[ValidState::Valid] = Utils::CreateColor(0x00CCFFaa);
+    stateColorMap[ValidState::Error] = Utils::CreateColor(0xFF0000aa);
 }
 
 void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
@@ -25,7 +25,6 @@ void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
 
         auto obj3d = refr->Get3D();
         colisionLayer = obj3d->GetCollisionLayer();
-
         if (Utils::IsStatic(colisionLayer)) {
             obj3d->SetCollisionLayer(RE::COL_LAYER::kNonCollidable);
         }
@@ -35,17 +34,22 @@ void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
 void ObjectManipulationManager::CancelDrag() {
     monitorState = MonitorState::Idle;
     auto obj = pickObject;
-    Utils::MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(), lastPos, lastAngle);
+    auto obj3d = obj->Get3D();
+    auto color = RE::NiColorA(0, 0, 0, 0);
     ResetCollision();
+    Utils::MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(), lastPos, lastAngle);
 }
 
 void ObjectManipulationManager::CommitDrag() {
     monitorState = MonitorState::Idle;
     auto obj = pickObject;
+    auto obj3d = obj->Get3D();
+    auto color = RE::NiColorA(0, 0, 0, 0);
+    obj3d->TintScenegraph(color);
     if (Utils::IsStatic(colisionLayer)) {
+        ResetCollision();
         obj->SetPosition(obj->GetPosition());
     }
-    ResetCollision();
 }
 
 void ObjectManipulationManager::Update() {
@@ -100,20 +104,14 @@ void ObjectManipulationManager::SetPlacementState(ValidState id) {
         currentState = id;
         auto obj = pickObject;
         auto color = stateColorMap[id];
-        SKSE::GetTaskInterface()->AddTask([obj, color]() {
-            if (auto obj3d = obj->Get3D()) {
-                obj3d->TintScenegraph(color);
-            }
-        });
+        if (auto obj3d = obj->Get3D()) {
+            obj3d->TintScenegraph(color);
+        }
     }
 }
 
 void ObjectManipulationManager::ResetCollision() {
     if (auto obj3d = pickObject->Get3D()) {
-        SKSE::GetTaskInterface()->AddTask([obj3d]() { 
-            auto color = RE::NiColorA(0, 0, 0, 0);
-            obj3d->TintScenegraph(color); 
-        });
         auto current = obj3d->GetCollisionLayer();
         if (current != colisionLayer) {
             obj3d->SetCollisionLayer(colisionLayer);
