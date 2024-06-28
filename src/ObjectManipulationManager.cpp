@@ -87,7 +87,10 @@ void ObjectManipulationManager::Pick(RE::TESObjectREFR* refr) {
 
 void ObjectManipulationManager::ResetCollision() {
     if (auto obj3d = pickObject->Get3D()) {
-        obj3d->TintScenegraph(RE::NiColorA(0x0));
+        SKSE::GetTaskInterface()->AddTask([obj3d]() { 
+            auto color = RE::NiColorA(0, 0, 0, 0);
+            obj3d->TintScenegraph(color); 
+        });
         auto current = obj3d->GetCollisionLayer();
         if (current != colisionLayer) {
             obj3d->SetCollisionLayer(colisionLayer);
@@ -99,18 +102,18 @@ void ObjectManipulationManager::Cancel() {
     monitorState = MonitorState::Idle;
     auto obj = pickObject;
     auto obj3d = pickObject->Get3D();
-    ResetCollision();
     Utils::MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(), lastPos, lastAngle);
+    ResetCollision();
 }
 
 void ObjectManipulationManager::Release() {
     monitorState = MonitorState::Idle;
     auto obj = pickObject;
     auto obj3d = pickObject->Get3D();
-    ResetCollision();
     if (IsStatic(colisionLayer)) {
         obj->SetPosition(obj->GetPosition());
     }
+    ResetCollision();
 }
 
 void ObjectManipulationManager::UpdatePlaceholderPosition() {
