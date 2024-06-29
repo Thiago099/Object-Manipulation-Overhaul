@@ -2,7 +2,7 @@
 #include "Lib/HookBuilder.h"
 #include "Lib/Raycast.h"
 #include "Lib/Misc.h"
-
+#include "Application/ObjectReferenceFilter.h"
 #define M_PI 3.14159265358979323846
 
 class ObjectManipulationManager {

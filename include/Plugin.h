@@ -4,3 +4,4 @@
 #include "Lib/Regex.h"
 #include "Application/UI.h"
 #include "Application/ObjectManipulationManager.h"
+#include "Application/ObjectReferenceFilter.h"

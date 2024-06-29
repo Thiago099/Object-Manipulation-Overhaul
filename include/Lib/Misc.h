@@ -12,5 +12,7 @@ namespace Misc {
     void MoveTo_Impl(RE::TESObjectREFR* ref, const RE::ObjectRefHandle& a_targetHandle, RE::TESObjectCELL* a_targetCell,
                      RE::TESWorldSpace* a_selfWorldSpace, const RE::NiPoint3& a_position,
                      const RE::NiPoint3& a_rotation);
+    RE::FormType StringToFormType(const std::string& str);
+    std::string ToLowerCase(const std::string& str);
 }
 

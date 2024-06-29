@@ -1,0 +1,8 @@
+Removes all forms
++All(0)
+-FormType(1, Static)
+-FormType(1, NPC)
+-FormType(1, Door)
+-FormType(1, MovableStatic)
+# -FormId(ccbgssse005-goldbrand.esl, 809)
+# -FormId(135BA)

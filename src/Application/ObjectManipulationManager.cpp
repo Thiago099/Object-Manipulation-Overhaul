@@ -196,7 +196,8 @@ void ObjectManipulationManager::ProcessIdleInputState(RE::InputEvent * current) 
                         if (obj == player3d) {
                             return false;
                         }
-                        return true;
+                        auto refr = obj->GetUserData();
+                        return ObjectReferenceFilter::Match(refr);
                     };
                     if (auto ref = RayCast::GetObjectAtCursor(evaluator, 1000)) {
                         StartDraggingObject(ref);
