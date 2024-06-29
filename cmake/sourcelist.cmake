@@ -5,4 +5,6 @@ set(SOURCE_FILES
 	src/Lib/Raycast.cpp
 	src/Lib/RayCollector.cpp
 	src/Lib/Misc.cpp
+	src/Lib/File.cpp
+	src/Lib/Regex.cpp
 )

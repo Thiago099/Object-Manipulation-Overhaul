@@ -1,8 +1,6 @@
 #include "Plugin.h"
 
-#include <filesystem>
-#include <iostream>
-#include <regex>
+
 namespace fs = std::filesystem;
 
 void OnMessage(SKSE::MessagingInterface::Message* message) {
@@ -15,17 +13,6 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
     }
 }
 
-std::vector<std::string> LookupFilesOnDirectory(std::string path, std::string regex) {
-    std::regex regexPattern(regex);
-    std::vector<std::string> fileList;
-    for (const auto& dirEntry : std::filesystem::directory_iterator(path)) {
-        auto str = dirEntry.path().filename().string();
-        if (std::regex_match(str, regexPattern)) {
-            fileList.push_back(dirEntry.path().string());
-        }
-    }
-    return fileList;
-}
 
 SKSEPluginLoad(const SKSE::LoadInterface* skse) {
     SKSE::Init(skse);
@@ -35,8 +22,15 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse) {
     UI::Register();
 
     logger::info("init");
-    for (auto& fileName : LookupFilesOnDirectory(".\\Data", ".*_OMF\\.txt$")) {
-        logger::info(":( {}", fileName);
+    auto regex = Regex("([-+])\\s*([^\\s]*)\\s*\\(\\s*([^\\s]+)\\s*\\)");
+    for (auto& fileName : File::Lookup(".\\Data", ".*_OMF\\.txt$")) {
+        logger::info("file: {}", fileName);
+        for (auto& line : File::ReadAllLines(fileName)) {
+            auto match = regex.Match(line);
+            if (match.size() == 4) {
+                logger::info("{};{};{};", match[1], match[2], match[3]);
+            }
+        }
     }
 
     return true;
