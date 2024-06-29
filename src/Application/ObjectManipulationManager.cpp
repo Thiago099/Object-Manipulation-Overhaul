@@ -8,10 +8,7 @@
     State::stateColorMap[State::ValidState::Valid] = Misc::CreateColor(0x00CCFFaa);
     State::stateColorMap[State::ValidState::Error] = Misc::CreateColor(0xFF0000aa);
 
-    auto control = RE::ControlMap::GetSingleton();
-    
-    Input::activateKey =
-        static_cast<RE::BSKeyboardDevice::Key>(control->GetMappedKey("Activate", RE::INPUT_DEVICE::kKeyboard));
+
  }
 
 void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
@@ -173,8 +170,54 @@ bool ObjectManipulationManager::ProcessActiveInputState(RE::InputEvent* current)
     if (auto button = current->AsButtonEvent()) {
         if (button->GetDevice() == RE::INPUT_DEVICE::kKeyboard) {
             auto key = static_cast<RE::BSKeyboardDevice::Key>(button->GetIDCode());
-
-            if (key == Input::activateKey) {
+            //https://ck.uesp.net/wiki/GetMappedKey_-_Input
+            //Activate
+            //Auto-Move
+            //Back
+            //CameraPath
+            //Console
+            //Favorites
+            //Forward
+            //Hotkey1
+            //Hotkey2
+            //Hotkey3
+            //Hotkey4
+            //Hotkey5
+            //Hotkey6
+            //Hotkey7
+            //Hotkey8
+            //Journal
+            //Jump
+            //Left Attack/Block
+            //Look
+            //Move
+            //Multi-Screenshot
+            //Pause
+            //Quick Inventory
+            //Quick Magic
+            //Quick Map
+            //Quick Stats
+            //Quickload
+            //Quicksave
+            //Ready Weapon
+            //Right Attack/Block
+            //Run
+            //Screenshot
+            //Shout
+            //Sneak
+            //Sprint
+            //Strafe Left
+            //Strafe Right
+            //Toggle Always Run
+            //Toggle POV
+            //Tween Menu
+            //Wait
+            //Zoom In
+            //Zoom Out
+            auto control = RE::ControlMap::GetSingleton();
+            auto activateKey =
+                static_cast<RE::BSKeyboardDevice::Key>(control->GetMappedKey("Activate", RE::INPUT_DEVICE::kKeyboard));
+            if (key == activateKey) {
                 return true;
             }
 

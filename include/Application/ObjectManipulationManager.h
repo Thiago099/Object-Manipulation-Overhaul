@@ -41,7 +41,6 @@ class ObjectManipulationManager {
             static inline REL::Relocation<decltype(thunk)> originalFunction;
         };
         static inline bool isControlKeyDown = false;
-        static inline RE::BSKeyboardDevice::Key activateKey;
     };
 
 
