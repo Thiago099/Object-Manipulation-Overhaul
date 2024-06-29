@@ -35,6 +35,7 @@ void ObjectManipulationManager::CancelDrag() {
     auto obj = Selection::object;
     auto obj3d = obj->Get3D();
     auto color = RE::NiColorA(0, 0, 0, 0);
+    obj3d->TintScenegraph(color);
     if (Misc::IsStatic(Selection::objectOriginalCollisionLayer)) {
         ResetCollision();
         Misc::MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(),
