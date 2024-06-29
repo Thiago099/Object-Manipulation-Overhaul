@@ -49,7 +49,7 @@ class ObjectManipulationManager {
     static void Update();
     static bool ProcessActiveInputState(RE::InputEvent* current);
     static void ProcessIdleInputState(RE::InputEvent* current);
-    static void UpdatePlaceholderPosition();
+    static bool UpdatePlaceholderPosition();
     static void TryInitialize();
     public:
 

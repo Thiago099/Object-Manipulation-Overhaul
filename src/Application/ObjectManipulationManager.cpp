@@ -86,7 +86,7 @@ void ObjectManipulationManager::Update() {
         return;
     }
 
-    if (!obj->Get3D()) {
+    if (UpdatePlaceholderPosition()) {
         return;
     }
 
@@ -106,7 +106,6 @@ void ObjectManipulationManager::Update() {
 
     auto [cameraPosition, rayPostion] = RayCast::GetCursorPosition(evaluator);
 
-    UpdatePlaceholderPosition();
 
     Misc::SetPosition(obj, rayPostion + Selection::positionOffset);
     Misc::SetAngle(
@@ -151,14 +150,16 @@ void ObjectManipulationManager::ResetCollision() {
     }
 }
 
-void ObjectManipulationManager::UpdatePlaceholderPosition() {
+bool ObjectManipulationManager::UpdatePlaceholderPosition() {
     auto player = RE::PlayerCharacter::GetSingleton();
     if (Selection::object->GetWorldspace() != player->GetWorldspace() ||
         Selection::object->GetParentCell() != player->GetParentCell()) {
         Misc::MoveTo_Impl(Selection::object, RE::ObjectRefHandle(), player->GetParentCell(),
                     player->GetWorldspace(), player->GetPosition(), Selection::object->GetAngle());
         State::validState = State::ValidState::None;
+        return true;
     }
+    return false;
 }
 
 bool ObjectManipulationManager::ProcessActiveInputState(RE::InputEvent* current) {
@@ -238,7 +239,6 @@ void ObjectManipulationManager::ProcessIdleInputState(RE::InputEvent * current) 
 void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
                                                              RE::InputEvent* const* a_event) {
     if (State::dragState != State::DragState::Idle) {
-
         if (State::dragState == State::DragState::Initializing) {
             TryInitialize();
         }
