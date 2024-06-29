@@ -215,10 +215,11 @@ bool ObjectManipulationManager::ProcessActiveInputState(RE::InputEvent* current)
             //Zoom In
             //Zoom Out
             auto control = RE::ControlMap::GetSingleton();
-            auto activateKey =
-                static_cast<RE::BSKeyboardDevice::Key>(control->GetMappedKey("Activate", RE::INPUT_DEVICE::kKeyboard));
-            if (key == activateKey) {
-                return true;
+            if (control) {
+                if (key == static_cast<RE::BSKeyboardDevice::Key>(
+                               control->GetMappedKey("Activate", RE::INPUT_DEVICE::kKeyboard))) {
+                    return true;
+                }
             }
 
             switch (key) {
