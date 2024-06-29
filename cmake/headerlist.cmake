@@ -1,10 +1,12 @@
 set(HEADER_FILES
-	include/logger.h
 	include/PCH.h
-	include/SKSEMenuFramework.h
-	include/UI.h
 	include/Plugin.h
-	include/HookBuilder.h
-	include/ObjectManipulationManager.h
-	include/Utils.h
+	include/Application/UI.h
+	include/Application/ObjectManipulationManager.h
+	include/Lib/logger.h
+	include/Lib/SKSEMenuFramework.h
+	include/Lib/HookBuilder.h
+	include/Lib/Raycast.h
+	include/Lib/RayCollector.h
+	include/Lib/Misc.h
 )

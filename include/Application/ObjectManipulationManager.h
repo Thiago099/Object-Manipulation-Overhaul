@@ -1,6 +1,7 @@
 #pragma once
-#include "Utils.h"
-#include "HookBuilder.h"
+#include "Lib/HookBuilder.h"
+#include "Lib/Raycast.h"
+#include "Lib/Misc.h"
 
 #define M_PI 3.14159265358979323846
 

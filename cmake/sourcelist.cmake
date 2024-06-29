@@ -1,6 +1,8 @@
 set(SOURCE_FILES
 	src/plugin.cpp
-	src/UI.cpp
-	src/Utils.cpp
-	src/ObjectManipulationManager.cpp
+	src/Application/UI.cpp
+	src/Application/ObjectManipulationManager.cpp
+	src/Lib/Raycast.cpp
+	src/Lib/RayCollector.cpp
+	src/Lib/Misc.cpp
 )

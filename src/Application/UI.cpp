@@ -1,4 +1,4 @@
-#include "UI.h"
+#include "Application/UI.h"
 
 void UI::Register() {
     if (!SKSEMenuFramework::IsInstalled()) {

@@ -1,6 +1,6 @@
 #pragma once
-#include "SKSEMenuFramework.h"
-#include "ObjectManipulationManager.h"
+#include "Lib/SKSEMenuFramework.h"
+#include "Application/ObjectManipulationManager.h"
 namespace UI {
     void Register();
     namespace Menu1 {

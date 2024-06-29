@@ -1,4 +1,4 @@
 #pragma once
-#include "Logger.h"
-#include "UI.h"
-#include "ObjectManipulationManager.h"
+#include "Lib/Logger.h"
+#include "Application/UI.h"
+#include "Application/ObjectManipulationManager.h"

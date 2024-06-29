@@ -1,20 +1,20 @@
-#include "ObjectManipulationManager.h"
+#include "Application/ObjectManipulationManager.h"
 
  void ObjectManipulationManager::Install() {
     auto builder = new HookBuilder();
     builder->AddCall<ProcessInputQueueHook, 5, 14>(67315, 0x7B, 68617, 0x7B, 0xC519E0, 0x81);
     builder->Install();
     delete builder;
-    stateColorMap[ValidState::Valid] = Utils::CreateColor(0x00CCFFaa);
-    stateColorMap[ValidState::Error] = Utils::CreateColor(0xFF0000aa);
+    stateColorMap[ValidState::Valid] = Misc::CreateColor(0x00CCFFaa);
+    stateColorMap[ValidState::Error] = Misc::CreateColor(0xFF0000aa);
 }
 
 void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
     if (refr) {
         lastPos = refr->GetPosition();
         lastAngle = refr->GetAngle();
-        auto [cameraAngle, cameraPosition] = Utils::GetCameraData();
-        angleOffset = Utils::NormalizeAngle(refr->GetAngle().z -
+        auto [cameraAngle, cameraPosition] = RayCast::GetCameraData();
+        angleOffset = Misc::NormalizeAngle(refr->GetAngle().z -
                                             std::atan2(cameraPosition.x - lastPos.x, cameraPosition.y - lastPos.y));
         positionOffset = RE::NiPoint3(0, 0, 0);
         ctrlKey = false;
@@ -25,7 +25,7 @@ void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
 
         auto obj3d = refr->Get3D();
         colisionLayer = obj3d->GetCollisionLayer();
-        if (Utils::IsStatic(colisionLayer)) {
+        if (Misc::IsStatic(colisionLayer)) {
             obj3d->SetCollisionLayer(RE::COL_LAYER::kNonCollidable);
         }
     }
@@ -37,7 +37,7 @@ void ObjectManipulationManager::CancelDrag() {
     auto obj3d = obj->Get3D();
     auto color = RE::NiColorA(0, 0, 0, 0);
     ResetCollision();
-    Utils::MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(), lastPos, lastAngle);
+    Misc::MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(), lastPos, lastAngle);
 }
 
 void ObjectManipulationManager::CommitDrag() {
@@ -46,7 +46,7 @@ void ObjectManipulationManager::CommitDrag() {
     auto obj3d = obj->Get3D();
     auto color = RE::NiColorA(0, 0, 0, 0);
     obj3d->TintScenegraph(color);
-    if (Utils::IsStatic(colisionLayer)) {
+    if (Misc::IsStatic(colisionLayer)) {
         ResetCollision();
         obj->SetPosition(obj->GetPosition());
     }
@@ -60,7 +60,7 @@ void ObjectManipulationManager::Update() {
         return;
     }
 
-    auto player3d = Utils::GetPlayer3d();
+    auto player3d = Misc::GetPlayer3d();
 
     auto pick3d = pickObject->Get3D();
 
@@ -74,18 +74,18 @@ void ObjectManipulationManager::Update() {
         return true;
     };
 
-    auto [cameraPosition, rayPostion] = Utils::PlayerCameraRayPos(evaluator);
+    auto [cameraPosition, rayPostion] = RayCast::GetCursorPosition(evaluator);
 
     UpdatePlaceholderPosition();
 
-    Utils::SetPosition(obj, rayPostion + positionOffset);
-    Utils::SetAngle(
+    Misc::SetPosition(obj, rayPostion + positionOffset);
+    Misc::SetAngle(
         obj,
         RE::NiPoint3(0, 0, std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) + angleOffset));
 
     obj->Update3DPosition(true);
 
-    if (Utils::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
+    if (Misc::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
         SetPlacementState(ValidState::Valid);
     } else {
         SetPlacementState(ValidState::Error);
@@ -123,7 +123,7 @@ void ObjectManipulationManager::UpdatePlaceholderPosition() {
     auto player = RE::PlayerCharacter::GetSingleton();
     if (pickObject->GetWorldspace() != player->GetWorldspace() ||
         pickObject->GetParentCell() != player->GetParentCell()) {
-        Utils::MoveTo_Impl(pickObject, RE::ObjectRefHandle(), player->GetParentCell(),
+        Misc::MoveTo_Impl(pickObject, RE::ObjectRefHandle(), player->GetParentCell(),
                     player->GetWorldspace(),
                     player->GetPosition(), pickObject->GetAngle());
         currentState = ValidState::None;
@@ -153,14 +153,14 @@ bool ObjectManipulationManager::ProcessActiveInputState(RE::InputEvent* current)
                     if (ctrlKey) {
                         positionOffset.z += 1.f;
                     } else {
-                        angleOffset = Utils::NormalizeAngle(angleOffset + M_PI / 30);
+                        angleOffset = Misc::NormalizeAngle(angleOffset + M_PI / 30);
                     }
                     return true;
                 case RE::BSWin32MouseDevice::Key::kWheelDown:
                     if (ctrlKey) {
                         positionOffset.z -= 1.f;
                     } else {
-                        angleOffset = Utils::NormalizeAngle(angleOffset - M_PI / 30);
+                        angleOffset = Misc::NormalizeAngle(angleOffset - M_PI / 30);
                     }
                     return true;
                 case RE::BSWin32MouseDevice::Key::kRightButton:
@@ -183,7 +183,7 @@ void ObjectManipulationManager::ProcessIdleInputState(RE::InputEvent * current) 
             if (button->IsDown() && button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
                 if (static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode()) ==
                     RE::BSWin32MouseDevice::Key::kMiddleButton) {
-                    auto player3d = Utils::GetPlayer3d();
+                    auto player3d = Misc::GetPlayer3d();
 
                     const auto evaluator = [player3d](RE::NiAVObject* obj) {
                         if (obj == player3d) {
@@ -191,7 +191,7 @@ void ObjectManipulationManager::ProcessIdleInputState(RE::InputEvent * current) 
                         }
                         return true;
                     };
-                    if (auto ref = Utils::PlayerCameraRayRefr(evaluator, 1000)) {
+                    if (auto ref = RayCast::GetObjectAtCursor(evaluator, 1000)) {
                         StartDraggingObject(ref);
                     }
                 }
