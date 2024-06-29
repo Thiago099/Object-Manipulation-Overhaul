@@ -13,6 +13,7 @@
 
 void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
     if (refr) {
+        CancelDrag();
         Selection::lastPosition = refr->GetPosition();
         Selection::lastAngle = refr->GetAngle();
         auto [cameraAngle, cameraPosition] = RayCast::GetCameraData();
@@ -27,7 +28,6 @@ void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
 }
 
 void ObjectManipulationManager::TryInitialize() {
-
     auto obj3d = Selection::object->Get3D();
     if (obj3d) {
         Selection::objectOriginalCollisionLayer = obj3d->GetCollisionLayer();
@@ -40,6 +40,9 @@ void ObjectManipulationManager::TryInitialize() {
 }
 
 void ObjectManipulationManager::CancelDrag() {
+    if (State::dragState == State::DragState::Idle) {
+        return;
+    }
     State::dragState = State::DragState::Idle;
     auto obj = Selection::object;
     if (!obj) {
