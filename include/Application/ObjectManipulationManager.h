@@ -2,6 +2,7 @@
 #include "Lib/HookBuilder.h"
 #include "Lib/Raycast.h"
 #include "Lib/Misc.h"
+#include "Lib/InputManager.h"
 #include "Application/ObjectReferenceFilter.h"
 #define M_PI 3.14159265358979323846
 
@@ -41,6 +42,21 @@ class ObjectManipulationManager {
             static inline REL::Relocation<decltype(thunk)> originalFunction;
         };
         static inline bool isControlKeyDown = false;
+        static inline InputManager* passiveInputManager = new InputManager();
+        static inline InputManager* activeInputManager = new InputManager();
+
+        class PassiveState {
+        public:
+            static void Pick(RE::ButtonEvent* button);
+        };
+        class ActiveState {
+            public:
+            static void ToggleMoveRotate(RE::ButtonEvent* button);
+            static void TranslatePlus(RE::ButtonEvent* button);
+            static void TranslateMinus(RE::ButtonEvent* button);
+            static void Cancel(RE::ButtonEvent* button);
+            static void Commit(RE::ButtonEvent* button);
+        };
     };
 
 
@@ -48,7 +64,6 @@ class ObjectManipulationManager {
     static void ResetCollision();
     static void Update();
     static bool ProcessActiveInputState(RE::InputEvent* current);
-    static void ProcessIdleInputState(RE::InputEvent* current);
     static bool UpdatePlaceholderPosition();
     static void TryInitialize();
     public:

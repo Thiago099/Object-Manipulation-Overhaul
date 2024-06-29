@@ -8,6 +8,20 @@
     State::stateColorMap[State::ValidState::Valid] = Misc::CreateColor(0x00CCFFaa);
     State::stateColorMap[State::ValidState::Error] = Misc::CreateColor(0xFF0000aa);
 
+    Input::passiveInputManager->AddAction("Pick", Input::PassiveState::Pick);
+    Input::activeInputManager->AddAction("ToggleMoveRotate", Input::ActiveState::ToggleMoveRotate);
+    Input::activeInputManager->AddAction("TranslatePlus", Input::ActiveState::TranslatePlus);
+    Input::activeInputManager->AddAction("TranslateMinus", Input::ActiveState::TranslateMinus);
+    Input::activeInputManager->AddAction("Cancel", Input::ActiveState::Cancel);
+    Input::activeInputManager->AddAction("Commit", Input::ActiveState::Commit);
+
+    Input::passiveInputManager->AddBinding("mouse", "middlebutton", "Pick");
+    Input::passiveInputManager->AddBinding("mouse", "rightcontrol", "ToggleMoveRotate");
+    Input::passiveInputManager->AddBinding("mouse", "leftcontrol", "ToggleMoveRotate");
+    Input::passiveInputManager->AddBinding("mouse", "wheelup", "TranslatePlus");
+    Input::passiveInputManager->AddBinding("mouse", "wheeldown", "TranslateMinus");
+    Input::passiveInputManager->AddBinding("mouse", "rightbutton", "Cancel");
+    Input::passiveInputManager->AddBinding("mouse", "leftbutton", "Commit");
 
  }
 
@@ -224,77 +238,11 @@ bool ObjectManipulationManager::ProcessActiveInputState(RE::InputEvent* current)
                     return true;
                 }
             }
-
-            switch (key) {
-                case RE::BSKeyboardDevice::Key::kLeftControl:
-                case RE::BSKeyboardDevice::Key::kRightControl:
-                    if (button->IsDown()) {
-                        Input::isControlKeyDown = true;
-                    } else if (button->IsUp()) {
-                        Input::isControlKeyDown = false;
-                    }
-                    return true;
-                default:
-                    break;
-            }
-        }
-        if (button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
-            switch (auto key = static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode())) {
-                case RE::BSWin32MouseDevice::Key::kWheelUp:
-                    if (Input::isControlKeyDown) {
-                        Selection::positionOffset.z += 1.f;
-                    } else {
-                        Selection::angleOffset = Misc::NormalizeAngle(Selection::angleOffset + M_PI / 30);
-                    }
-                    return true;
-                case RE::BSWin32MouseDevice::Key::kWheelDown:
-                    if (Input::isControlKeyDown) {
-                        Selection::positionOffset.z -= 1.f;
-                    } else {
-                        Selection::angleOffset = Misc::NormalizeAngle(Selection::angleOffset - M_PI / 30);
-                    }
-                    return true;
-                case RE::BSWin32MouseDevice::Key::kRightButton:
-                    if (button->IsDown()) {
-                        CancelDrag();
-                    }
-                    return true;
-                case RE::BSWin32MouseDevice::Key::kLeftButton:
-                    if (button->IsDown()) {
-                        if (State::validState == State::ValidState::Valid) {
-                            CommitDrag();
-                        }
-                    }
-                    return true;
-                default:
-                    break;
-            }
         }
     }
     return false;
 }
-void ObjectManipulationManager::ProcessIdleInputState(RE::InputEvent * current) {
-        if (auto button = current->AsButtonEvent()) {
-            if (button->IsDown() && button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
-                auto mouseButton = static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode());
-                if (mouseButton == RE::BSWin32MouseDevice::Key::kMiddleButton && button->IsDown()) {
-                    auto player3d = Misc::GetPlayer3d();
 
-                    const auto evaluator = [player3d](RE::NiAVObject* obj) {
-                        if (obj == player3d) {
-                            return false;
-                        }
-                        return true;
-                    };
-                    if (auto ref = RayCast::GetObjectAtCursor(evaluator, 1000)) {
-                        if (ObjectReferenceFilter::Match(ref)) {
-                            StartDraggingObject(ref);
-                        }
-                    }
-                }
-            }
-        }
-}
 void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
                                                              RE::InputEvent* const* a_event) {
     if (State::dragState != State::DragState::Idle) {
@@ -310,7 +258,13 @@ void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEvent
         auto last = *a_event;
         size_t length = 0;
         for (auto current = *a_event; current; current = current->next) {
+
             bool suppress = ProcessActiveInputState(current);
+            if (auto button = current->AsButtonEvent()) {
+                if (Input::activeInputManager->ProcessInput(button)) {
+                    suppress = true;
+                }
+            }
             if (suppress) {
                 if (current != last) {
                     last->next = current->next;
@@ -332,9 +286,71 @@ void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEvent
         }
     } else {
         for (auto current = *a_event; current; current = current->next) {
-            ProcessIdleInputState(current);
+            if (auto button = current->AsButtonEvent()) {
+                Input::passiveInputManager->ProcessInput(button);
+            }
         }
 
         originalFunction(a_dispatcher, a_event);
+    }
+}
+
+void ObjectManipulationManager::Input::PassiveState::Pick(RE::ButtonEvent* button) {
+    if (button->IsDown() && button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
+        auto mouseButton = static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode());
+        if (mouseButton == RE::BSWin32MouseDevice::Key::kMiddleButton && button->IsDown()) {
+            auto player3d = Misc::GetPlayer3d();
+
+            const auto evaluator = [player3d](RE::NiAVObject* obj) {
+                if (obj == player3d) {
+                    return false;
+                }
+                return true;
+            };
+            if (auto ref = RayCast::GetObjectAtCursor(evaluator, 1000)) {
+                if (ObjectReferenceFilter::Match(ref)) {
+                    StartDraggingObject(ref);
+                }
+            }
+        }
+    }
+}
+
+
+void ObjectManipulationManager::Input::ActiveState::ToggleMoveRotate(RE::ButtonEvent* button) {
+    if (button->IsDown()) {
+        Input::isControlKeyDown = true;
+    } else if (button->IsUp()) {
+        Input::isControlKeyDown = false;
+    }
+}
+
+void ObjectManipulationManager::Input::ActiveState::TranslatePlus(RE::ButtonEvent* button) {
+    if (Input::isControlKeyDown) {
+        Selection::positionOffset.z += 1.f;
+    } else {
+        Selection::angleOffset = Misc::NormalizeAngle(Selection::angleOffset + M_PI / 30);
+    }
+}
+
+void ObjectManipulationManager::Input::ActiveState::TranslateMinus(RE::ButtonEvent* button) {
+    if (Input::isControlKeyDown) {
+        Selection::positionOffset.z -= 1.f;
+    } else {
+        Selection::angleOffset = Misc::NormalizeAngle(Selection::angleOffset - M_PI / 30);
+    }
+}
+
+void ObjectManipulationManager::Input::ActiveState::Cancel(RE::ButtonEvent* button) {
+    if (button->IsDown()) {
+        CancelDrag();
+    }
+}
+
+void ObjectManipulationManager::Input::ActiveState::Commit(RE::ButtonEvent* button) {
+    if (button->IsDown()) {
+        if (State::validState == State::ValidState::Valid) {
+            CommitDrag();
+        }
     }
 }

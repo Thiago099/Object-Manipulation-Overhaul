@@ -8,6 +8,7 @@ set(SOURCE_FILES
 	src/Lib/Misc.cpp
 	src/Lib/File.cpp
 	src/Lib/Regex.cpp
+	src/Lib/InputManager.cpp
 	src/Interface/ObjectManipulationOverhaul.cpp
 	src/Interface/Papyrus.cpp
 )
