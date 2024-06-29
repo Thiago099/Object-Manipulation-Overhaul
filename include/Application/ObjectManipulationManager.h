@@ -7,47 +7,44 @@
 
 class ObjectManipulationManager {
 
-    enum ValidState {
-        None,
-        Valid,
-        Error,
-        Warn,
+    class Selection {
+        public:
+        static inline RE::TESObjectREFR* object;
+        static inline RE::COL_LAYER objectOriginalCollisionLayer;
+
+        static inline float angleOffset = M_PI;
+        static inline RE::NiPoint3 positionOffset;
+
+        static inline RE::NiPoint3 lastPosition;
+        static inline RE::NiPoint3 lastAngle;
     };
 
-    enum MonitorState {
-        Idle,
-        Running
+    class State {
+        public:
+        enum ValidState {
+            None,
+            Valid,
+            Error,
+            Warn,
+        };
+
+        enum DragState { Idle, Running };
+        static inline ValidState validState = ValidState::None;
+        static inline DragState dragState = DragState::Idle;
+        static inline std::map<State::ValidState, RE::NiColorA> stateColorMap;
+
+    };
+    class Input {
+        public:
+        struct ProcessInputQueueHook {
+            static void thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher, RE::InputEvent* const* a_event);
+            static inline REL::Relocation<decltype(thunk)> originalFunction;
+        };
+        static inline bool ctrlKey = false;
     };
 
-    static inline bool cdset = false;
 
-
-    static inline RE::NiPoint3 cd = {};
-
-    static inline RE::COL_LAYER colisionLayer;
-    static inline RE::TESObjectREFR* pickObject;
-    static inline ValidState stateBuffer = ValidState::None;
-    static inline ValidState currentState = ValidState::None;
-    static inline MonitorState monitorState = MonitorState::Idle;
-    static inline bool pickedObjectHasCollison = false;
-
-    static inline RE::NiPoint3 lastPos;
-    static inline RE::NiPoint3 lastAngle;
-
-    static inline bool ctrlKey = false;
-
-    static inline std::map<ValidState, RE::NiColorA> stateColorMap;
-
-
-
-    static inline float angleOffset = M_PI;
-    static inline RE::NiPoint3 positionOffset;
-    static void SetPlacementState(ValidState id);
-    struct ProcessInputQueueHook {
-        static void thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher, RE::InputEvent* const* a_event);
-        static inline REL::Relocation<decltype(thunk)> originalFunction;
-    };
-
+    static void SetPlacementState(State::ValidState id);
     static void ResetCollision();
     static void Update();
     static bool ProcessActiveInputState(RE::InputEvent* current);

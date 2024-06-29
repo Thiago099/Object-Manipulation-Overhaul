@@ -2,67 +2,66 @@
 
  void ObjectManipulationManager::Install() {
     auto builder = new HookBuilder();
-    builder->AddCall<ProcessInputQueueHook, 5, 14>(67315, 0x7B, 68617, 0x7B, 0xC519E0, 0x81);
+    builder->AddCall<Input::ProcessInputQueueHook, 5, 14>(67315, 0x7B, 68617, 0x7B, 0xC519E0, 0x81);
     builder->Install();
     delete builder;
-    stateColorMap[ValidState::Valid] = Misc::CreateColor(0x00CCFFaa);
-    stateColorMap[ValidState::Error] = Misc::CreateColor(0xFF0000aa);
-}
+    State::stateColorMap[State::ValidState::Valid] = Misc::CreateColor(0x00CCFFaa);
+    State::stateColorMap[State::ValidState::Error] = Misc::CreateColor(0xFF0000aa);
+ }
 
 void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
     if (refr) {
-        lastPos = refr->GetPosition();
-        lastAngle = refr->GetAngle();
+        Selection::lastPosition = refr->GetPosition();
+        Selection::lastAngle = refr->GetAngle();
         auto [cameraAngle, cameraPosition] = RayCast::GetCameraData();
-        angleOffset = Misc::NormalizeAngle(refr->GetAngle().z -
-                                            std::atan2(cameraPosition.x - lastPos.x, cameraPosition.y - lastPos.y));
-        positionOffset = RE::NiPoint3(0, 0, 0);
-        ctrlKey = false;
-        pickObject = refr;
-        currentState = ValidState::None;
-        stateBuffer = ValidState::Valid;
-        monitorState = MonitorState::Running;
+        Selection::angleOffset = Misc::NormalizeAngle(refr->GetAngle().z - std::atan2(cameraPosition.x - Selection::lastPosition.x,
+                                                                 cameraPosition.y - Selection::lastPosition.y));
+        Selection::positionOffset = RE::NiPoint3(0, 0, 0);
+        Input::ctrlKey = false;
+        Selection::object = refr;
+        State::validState = State::ValidState::None;
+        State::dragState = State::DragState::Running;
 
         auto obj3d = refr->Get3D();
-        colisionLayer = obj3d->GetCollisionLayer();
-        if (Misc::IsStatic(colisionLayer)) {
+        Selection::objectOriginalCollisionLayer = obj3d->GetCollisionLayer();
+        if (Misc::IsStatic(Selection::objectOriginalCollisionLayer)) {
             obj3d->SetCollisionLayer(RE::COL_LAYER::kNonCollidable);
         }
     }
 }
 
 void ObjectManipulationManager::CancelDrag() {
-    monitorState = MonitorState::Idle;
-    auto obj = pickObject;
+    State::dragState = State::DragState::Idle;
+    auto obj = Selection::object;
     auto obj3d = obj->Get3D();
     auto color = RE::NiColorA(0, 0, 0, 0);
     ResetCollision();
-    Misc::MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(), lastPos, lastAngle);
+    Misc::MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(), Selection::lastPosition, Selection::lastAngle);
 }
 
 void ObjectManipulationManager::CommitDrag() {
-    monitorState = MonitorState::Idle;
-    auto obj = pickObject;
+    State::dragState = State::DragState::Idle;
+    auto obj = Selection::object;
     auto obj3d = obj->Get3D();
     auto color = RE::NiColorA(0, 0, 0, 0);
     obj3d->TintScenegraph(color);
-    if (Misc::IsStatic(colisionLayer)) {
+    if (Misc::IsStatic(Selection::objectOriginalCollisionLayer)) {
         ResetCollision();
         obj->SetPosition(obj->GetPosition());
     }
 }
 
 void ObjectManipulationManager::Update() {
-    auto obj = pickObject;
+    auto obj = Selection::object;
 
     if (!obj || !obj->Get3D()) {
-        monitorState = MonitorState::Idle;
+        State::dragState = State::DragState::Idle;
         return;
     }
 
     auto player3d = Misc::GetPlayer3d();
 
-    auto pick3d = pickObject->Get3D();
+    auto pick3d = Selection::object->Get3D();
 
     const auto evaluator = [player3d, pick3d](RE::NiAVObject* obj) {
         if (obj == player3d) {
@@ -78,17 +77,18 @@ void ObjectManipulationManager::Update() {
 
     UpdatePlaceholderPosition();
 
-    Misc::SetPosition(obj, rayPostion + positionOffset);
+    Misc::SetPosition(obj, rayPostion + Selection::positionOffset);
     Misc::SetAngle(
-        obj,
-        RE::NiPoint3(0, 0, std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) + angleOffset));
+        obj, RE::NiPoint3(0, 0,
+                                     std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) +
+                                         Selection::angleOffset));
 
     obj->Update3DPosition(true);
 
     if (Misc::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
-        SetPlacementState(ValidState::Valid);
+        SetPlacementState(State::ValidState::Valid);
     } else {
-        SetPlacementState(ValidState::Error);
+        SetPlacementState(State::ValidState::Error);
     }
 
     // logger::info("Water: {}, name: {}", obj->IsInWater(),
@@ -96,14 +96,14 @@ void ObjectManipulationManager::Update() {
 }
 
 void ObjectManipulationManager::Clean() {
-    monitorState = MonitorState::Idle;
+    State::dragState = State::DragState::Idle;
 }
 
-void ObjectManipulationManager::SetPlacementState(ValidState id) {
-    if (id != currentState || currentState == ValidState::None) {
-        currentState = id;
-        auto obj = pickObject;
-        auto color = stateColorMap[id];
+void ObjectManipulationManager::SetPlacementState(State::ValidState id) {
+    if (id != State::validState || State::validState == State::ValidState::None) {
+        State::validState = id;
+        auto obj = Selection::object;
+        auto color = State::stateColorMap[id];
         if (auto obj3d = obj->Get3D()) {
             obj3d->TintScenegraph(color);
         }
@@ -111,22 +111,21 @@ void ObjectManipulationManager::SetPlacementState(ValidState id) {
 }
 
 void ObjectManipulationManager::ResetCollision() {
-    if (auto obj3d = pickObject->Get3D()) {
+    if (auto obj3d = Selection::object->Get3D()) {
         auto current = obj3d->GetCollisionLayer();
-        if (current != colisionLayer) {
-            obj3d->SetCollisionLayer(colisionLayer);
+        if (current != Selection::objectOriginalCollisionLayer) {
+            obj3d->SetCollisionLayer(Selection::objectOriginalCollisionLayer);
         }
     }
 }
 
 void ObjectManipulationManager::UpdatePlaceholderPosition() {
     auto player = RE::PlayerCharacter::GetSingleton();
-    if (pickObject->GetWorldspace() != player->GetWorldspace() ||
-        pickObject->GetParentCell() != player->GetParentCell()) {
-        Misc::MoveTo_Impl(pickObject, RE::ObjectRefHandle(), player->GetParentCell(),
-                    player->GetWorldspace(),
-                    player->GetPosition(), pickObject->GetAngle());
-        currentState = ValidState::None;
+    if (Selection::object->GetWorldspace() != player->GetWorldspace() ||
+        Selection::object->GetParentCell() != player->GetParentCell()) {
+        Misc::MoveTo_Impl(Selection::object, RE::ObjectRefHandle(), player->GetParentCell(),
+                    player->GetWorldspace(), player->GetPosition(), Selection::object->GetAngle());
+        State::validState = State::ValidState::None;
     }
 }
 
@@ -138,9 +137,9 @@ bool ObjectManipulationManager::ProcessActiveInputState(RE::InputEvent* current)
                 case RE::BSKeyboardDevice::Key::kLeftControl:
                 case RE::BSKeyboardDevice::Key::kRightControl:
                     if (button->IsDown()) {
-                        ctrlKey = true;
+                        Input::ctrlKey = true;
                     } else if (button->IsUp()) {
-                        ctrlKey = false;
+                        Input::ctrlKey = false;
                     }
                     return true;
                 default:
@@ -150,24 +149,24 @@ bool ObjectManipulationManager::ProcessActiveInputState(RE::InputEvent* current)
         if (button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
             switch (auto key = static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode())) {
                 case RE::BSWin32MouseDevice::Key::kWheelUp:
-                    if (ctrlKey) {
-                        positionOffset.z += 1.f;
+                    if (Input::ctrlKey) {
+                        Selection::positionOffset.z += 1.f;
                     } else {
-                        angleOffset = Misc::NormalizeAngle(angleOffset + M_PI / 30);
+                        Selection::angleOffset = Misc::NormalizeAngle(Selection::angleOffset + M_PI / 30);
                     }
                     return true;
                 case RE::BSWin32MouseDevice::Key::kWheelDown:
-                    if (ctrlKey) {
-                        positionOffset.z -= 1.f;
+                    if (Input::ctrlKey) {
+                        Selection::positionOffset.z -= 1.f;
                     } else {
-                        angleOffset = Misc::NormalizeAngle(angleOffset - M_PI / 30);
+                        Selection::angleOffset = Misc::NormalizeAngle(Selection::angleOffset - M_PI / 30);
                     }
                     return true;
                 case RE::BSWin32MouseDevice::Key::kRightButton:
                     CancelDrag();
                     return true;
                 case RE::BSWin32MouseDevice::Key::kLeftButton:
-                    if (currentState == ValidState::Valid) {
+                    if (State::validState == State::ValidState::Valid) {
                         CommitDrag();
                     }
                     return true;
@@ -198,9 +197,9 @@ void ObjectManipulationManager::ProcessIdleInputState(RE::InputEvent * current) 
             }
         }
 }
-void ObjectManipulationManager::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
+void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
                                                              RE::InputEvent* const* a_event) {
-    if (monitorState != MonitorState::Idle) {
+    if (State::dragState != State::DragState::Idle) {
         Update();
         auto first = *a_event;
         auto last = *a_event;
