@@ -21,8 +21,6 @@ void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
         Selection::object = refr;
         State::validState = State::ValidState::None;
         State::dragState = State::DragState::Initializing;
-
-
     }
 }
 
@@ -128,10 +126,10 @@ void ObjectManipulationManager::Clean() {
 
 void ObjectManipulationManager::SetPlacementState(State::ValidState id) {
     if (id != State::validState || State::validState == State::ValidState::None) {
-        State::validState = id;
         auto obj = Selection::object;
         auto color = State::stateColorMap[id];
         if (auto obj3d = obj->Get3D()) {
+            State::validState = id;
             obj3d->TintScenegraph(color);
         }
     }
@@ -143,6 +141,7 @@ void ObjectManipulationManager::ResetCollision() {
         if (current != Selection::objectOriginalCollisionLayer) {
             obj3d->SetCollisionLayer(Selection::objectOriginalCollisionLayer);
         }
+        State::validState = State::ValidState::None;
     }
 }
 
@@ -190,11 +189,15 @@ bool ObjectManipulationManager::ProcessActiveInputState(RE::InputEvent* current)
                     }
                     return true;
                 case RE::BSWin32MouseDevice::Key::kRightButton:
-                    CancelDrag();
+                    if (button->IsDown()) {
+                        CancelDrag();
+                    }
                     return true;
                 case RE::BSWin32MouseDevice::Key::kLeftButton:
-                    if (State::validState == State::ValidState::Valid) {
-                        CommitDrag();
+                    if (button->IsDown()) {
+                        if (State::validState == State::ValidState::Valid) {
+                            CommitDrag();
+                        }
                     }
                     return true;
                 default:
@@ -219,8 +222,10 @@ void ObjectManipulationManager::ProcessIdleInputState(RE::InputEvent * current) 
 
                     };
                     if (auto ref = RayCast::GetObjectAtCursor(evaluator, 1000)) {
-                        if (ObjectReferenceFilter::Match(ref)) {
-                            StartDraggingObject(ref);
+                        if (button->IsDown()) {
+                            if (ObjectReferenceFilter::Match(ref)) {
+                                StartDraggingObject(ref);
+                            }
                         }
                     }
                 }

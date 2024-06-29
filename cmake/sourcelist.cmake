@@ -9,4 +9,5 @@ set(SOURCE_FILES
 	src/Lib/File.cpp
 	src/Lib/Regex.cpp
 	src/Interface/ObjectManipulationOverhaul.cpp
+	src/Interface/Papyrus.cpp
 )

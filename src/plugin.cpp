@@ -19,6 +19,8 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse) {
     SKSE::Init(skse);
     SKSE::GetMessagingInterface()->RegisterListener(OnMessage);
     SetupLog();
+    Papyrus::Install();
+
     logger::info("Plugin loaded");
     logger::info("init");
 
