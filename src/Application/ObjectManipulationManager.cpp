@@ -8,9 +8,10 @@
     State::stateColorMap[State::ValidState::Valid] = Misc::CreateColor(0x00CCFFaa);
     State::stateColorMap[State::ValidState::Error] = Misc::CreateColor(0xFF0000aa);
 
-    auto input = RE::BSInputDeviceManager::GetSingleton();
-    auto keyboard = input->GetKeyboard();
-    Input::activateKey = static_cast<RE::BSKeyboardDevice::Key>(keyboard->GetMappingKey("E"));
+    auto control = RE::ControlMap::GetSingleton();
+    
+    Input::activateKey =
+        static_cast<RE::BSKeyboardDevice::Key>(control->GetMappedKey("Activate", RE::INPUT_DEVICE::kKeyboard));
  }
 
 void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
