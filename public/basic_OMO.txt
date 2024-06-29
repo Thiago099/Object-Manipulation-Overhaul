@@ -1,0 +1,17 @@
+# Allow all forms
+
++All(0)
+
+# Blocks some possible game breaking forms
+
+-FormType(100, Static)
+-FormType(100, NPC)
+-FormType(100, Door)
+-FormType(100, MovableStatic)
+-FormType(100, Flora)
+-FormType(100, Tree)
+
+# example of form ids
+
+# -FormId(200, ccbgssse005-goldbrand.esl, 809)
+# -FormId(200, 135BA)

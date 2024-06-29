@@ -20,22 +20,36 @@ void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
         Input::ctrlKey = false;
         Selection::object = refr;
         State::validState = State::ValidState::None;
-        State::dragState = State::DragState::Running;
+        State::dragState = State::DragState::Initializing;
 
-        auto obj3d = refr->Get3D();
+
+    }
+}
+
+void ObjectManipulationManager::TryInitialize() {
+
+    auto obj3d = Selection::object->Get3D();
+    if (obj3d) {
         Selection::objectOriginalCollisionLayer = obj3d->GetCollisionLayer();
         if (Misc::IsStatic(Selection::objectOriginalCollisionLayer)) {
             obj3d->SetCollisionLayer(RE::COL_LAYER::kNonCollidable);
         }
+        State::dragState = State::DragState::Running;
     }
+
 }
 
 void ObjectManipulationManager::CancelDrag() {
     State::dragState = State::DragState::Idle;
     auto obj = Selection::object;
+    if (!obj) {
+        return;
+    }
     auto obj3d = obj->Get3D();
-    auto color = RE::NiColorA(0, 0, 0, 0);
-    obj3d->TintScenegraph(color);
+    if (obj3d) {
+        auto color = RE::NiColorA(0, 0, 0, 0);
+        obj3d->TintScenegraph(color);
+    }
     if (Misc::IsStatic(Selection::objectOriginalCollisionLayer)) {
         ResetCollision();
         Misc::MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(),
@@ -50,9 +64,14 @@ void ObjectManipulationManager::CancelDrag() {
 void ObjectManipulationManager::CommitDrag() {
     State::dragState = State::DragState::Idle;
     auto obj = Selection::object;
+    if (!obj) {
+        return;
+    }
     auto obj3d = obj->Get3D();
-    auto color = RE::NiColorA(0, 0, 0, 0);
-    obj3d->TintScenegraph(color);
+    if (obj3d) {
+        auto color = RE::NiColorA(0, 0, 0, 0);
+        obj3d->TintScenegraph(color);
+    }
     if (Misc::IsStatic(Selection::objectOriginalCollisionLayer)) {
         ResetCollision();
         obj->SetPosition(obj->GetPosition());
@@ -211,7 +230,15 @@ void ObjectManipulationManager::ProcessIdleInputState(RE::InputEvent * current) 
 void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
                                                              RE::InputEvent* const* a_event) {
     if (State::dragState != State::DragState::Idle) {
-        Update();
+
+        if (State::dragState == State::DragState::Initializing) {
+            TryInitialize();
+        }
+
+        if (State::dragState == State::DragState::Running) {
+            Update();
+        }
+
         auto first = *a_event;
         auto last = *a_event;
         size_t length = 0;

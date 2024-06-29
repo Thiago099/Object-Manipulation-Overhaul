@@ -12,4 +12,5 @@ set(HEADER_FILES
 	include/Lib/Misc.h
 	include/Lib/File.h
 	include/Lib/Regex.h
+	include/Interface/ObjectManipulationOverhaul.h
 )

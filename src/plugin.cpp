@@ -5,7 +5,7 @@ namespace fs = std::filesystem;
 
 void OnMessage(SKSE::MessagingInterface::Message* message) {
     if (message->type == SKSE::MessagingInterface::kDataLoaded) {
-        ObjectReferenceFilter::Install(".\\Data", ".*_OMF\\.txt$");
+        ObjectReferenceFilter::Install(".\\Data", ".*_OMO\\.txt$");
         ObjectManipulationManager::Install();
     }
     if (message->type == SKSE::MessagingInterface::kPostLoadGame ||
@@ -20,10 +20,7 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse) {
     SKSE::GetMessagingInterface()->RegisterListener(OnMessage);
     SetupLog();
     logger::info("Plugin loaded");
-    UI::Register();
-
     logger::info("init");
-
 
     return true;
 }

@@ -20,6 +20,7 @@ ObjectReferenceFilter& ObjectReferenceFilter::Install(std::string path, std::str
     ObjectReferenceFilter group;
     std::vector<Item> items;
     for (auto& fileName : File::Lookup(path, regex)) {
+        logger::info("Loading config file: {}", fileName);
         for (auto& line : File::ReadAllLines(fileName)) {
             auto itemGroups = bodyRegex.Match(line);
             if (itemGroups.size() >= 3) {
@@ -30,7 +31,7 @@ ObjectReferenceFilter& ObjectReferenceFilter::Install(std::string path, std::str
                     auto priority = 0;
                     bool hasPriority = false;
                     try {
-                        std::stoi(parameters[0][1]);
+                        priority = std::stoi(parameters[0][1]);
                         hasPriority = true;
                     }
                     catch (const std::invalid_argument&) {

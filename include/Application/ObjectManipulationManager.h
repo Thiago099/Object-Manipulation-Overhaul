@@ -28,7 +28,7 @@ class ObjectManipulationManager {
             Warn,
         };
 
-        enum DragState { Idle, Running };
+        enum DragState { Idle, Initializing, Running };
         static inline ValidState validState = ValidState::None;
         static inline DragState dragState = DragState::Idle;
         static inline std::map<State::ValidState, RE::NiColorA> stateColorMap;
@@ -50,7 +50,7 @@ class ObjectManipulationManager {
     static bool ProcessActiveInputState(RE::InputEvent* current);
     static void ProcessIdleInputState(RE::InputEvent* current);
     static void UpdatePlaceholderPosition();
-
+    static void TryInitialize();
     public:
 
     static void Clean();

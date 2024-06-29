@@ -35,7 +35,12 @@ class FormTypeFilterItem : public FilterItem {
 class FormIdFilterItem : public FilterItem {
     public:
     RE::FormID formId;
-        bool Run(RE::TESObjectREFR* item) const override { return item->GetFormID() == formId; }
+        bool Run(RE::TESObjectREFR* item) const override {
+            if (auto base = item->GetBaseObject()) {
+                return base->GetFormID() == formId;
+            }
+            return false;
+        }
 };
 class ObjectReferenceFilter {
     static inline std::vector<FilterItem*> filters;
