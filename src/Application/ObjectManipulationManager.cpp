@@ -35,8 +35,15 @@ void ObjectManipulationManager::CancelDrag() {
     auto obj = Selection::object;
     auto obj3d = obj->Get3D();
     auto color = RE::NiColorA(0, 0, 0, 0);
-    ResetCollision();
-    Misc::MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(), Selection::lastPosition, Selection::lastAngle);
+    if (Misc::IsStatic(Selection::objectOriginalCollisionLayer)) {
+        ResetCollision();
+        Misc::MoveTo_Impl(obj, RE::ObjectRefHandle(), obj->GetParentCell(), obj->GetWorldspace(),
+                          Selection::lastPosition, Selection::lastAngle);
+    } else {
+        Misc::SetPosition(obj, Selection::lastPosition);
+        Misc::SetAngle(obj, Selection::lastAngle);
+        obj->Update3DPosition(true);
+    }
 }
 
 void ObjectManipulationManager::CommitDrag() {
