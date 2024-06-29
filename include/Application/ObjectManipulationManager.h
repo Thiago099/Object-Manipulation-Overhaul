@@ -40,7 +40,8 @@ class ObjectManipulationManager {
             static void thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher, RE::InputEvent* const* a_event);
             static inline REL::Relocation<decltype(thunk)> originalFunction;
         };
-        static inline bool ctrlKey = false;
+        static inline bool isControlKeyDown = false;
+        static inline RE::BSKeyboardDevice::Key activateKey;
     };
 
 

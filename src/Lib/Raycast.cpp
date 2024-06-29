@@ -74,6 +74,7 @@ std::pair<RE::NiQuaternion, RE::NiPoint3> RayCast::GetCameraData() {
     if (camera->currentState.get()->id == RE::CameraState::kFirstPerson) {
         firstPerson->GetRotation(rotation);
         firstPerson->GetTranslation(translation);
+        translation += firstPerson->dampeningOffset;
     } else if (camera->currentState.get()->id == RE::CameraState::kThirdPerson) {
         rotation = thirdPerson->rotation;
         translation = thirdPerson->translation;

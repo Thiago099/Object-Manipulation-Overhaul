@@ -7,6 +7,10 @@
     delete builder;
     State::stateColorMap[State::ValidState::Valid] = Misc::CreateColor(0x00CCFFaa);
     State::stateColorMap[State::ValidState::Error] = Misc::CreateColor(0xFF0000aa);
+
+    auto input = RE::BSInputDeviceManager::GetSingleton();
+    auto keyboard = input->GetKeyboard();
+    Input::activateKey = static_cast<RE::BSKeyboardDevice::Key>(keyboard->GetMappingKey("E"));
  }
 
 void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
@@ -17,7 +21,7 @@ void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
         Selection::angleOffset = Misc::NormalizeAngle(refr->GetAngle().z - std::atan2(cameraPosition.x - Selection::lastPosition.x,
                                                                  cameraPosition.y - Selection::lastPosition.y));
         Selection::positionOffset = RE::NiPoint3(0, 0, 0);
-        Input::ctrlKey = false;
+        Input::isControlKeyDown = false;
         Selection::object = refr;
         State::validState = State::ValidState::None;
         State::dragState = State::DragState::Initializing;
@@ -157,6 +161,7 @@ bool ObjectManipulationManager::UpdatePlaceholderPosition() {
         Misc::MoveTo_Impl(Selection::object, RE::ObjectRefHandle(), player->GetParentCell(),
                     player->GetWorldspace(), player->GetPosition(), Selection::object->GetAngle());
         State::validState = State::ValidState::None;
+        State::dragState = State::DragState::Initializing;
         return true;
     }
     return false;
@@ -166,13 +171,19 @@ bool ObjectManipulationManager::ProcessActiveInputState(RE::InputEvent* current)
     bool suppress = false;
     if (auto button = current->AsButtonEvent()) {
         if (button->GetDevice() == RE::INPUT_DEVICE::kKeyboard) {
-            switch (auto key = static_cast<RE::BSKeyboardDevice::Key>(button->GetIDCode())) {
+            auto key = static_cast<RE::BSKeyboardDevice::Key>(button->GetIDCode());
+
+            if (key == Input::activateKey) {
+                return true;
+            }
+
+            switch (key) {
                 case RE::BSKeyboardDevice::Key::kLeftControl:
                 case RE::BSKeyboardDevice::Key::kRightControl:
                     if (button->IsDown()) {
-                        Input::ctrlKey = true;
+                        Input::isControlKeyDown = true;
                     } else if (button->IsUp()) {
-                        Input::ctrlKey = false;
+                        Input::isControlKeyDown = false;
                     }
                     return true;
                 default:
@@ -182,14 +193,14 @@ bool ObjectManipulationManager::ProcessActiveInputState(RE::InputEvent* current)
         if (button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
             switch (auto key = static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode())) {
                 case RE::BSWin32MouseDevice::Key::kWheelUp:
-                    if (Input::ctrlKey) {
+                    if (Input::isControlKeyDown) {
                         Selection::positionOffset.z += 1.f;
                     } else {
                         Selection::angleOffset = Misc::NormalizeAngle(Selection::angleOffset + M_PI / 30);
                     }
                     return true;
                 case RE::BSWin32MouseDevice::Key::kWheelDown:
-                    if (Input::ctrlKey) {
+                    if (Input::isControlKeyDown) {
                         Selection::positionOffset.z -= 1.f;
                     } else {
                         Selection::angleOffset = Misc::NormalizeAngle(Selection::angleOffset - M_PI / 30);

@@ -7,11 +7,16 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
     if (message->type == SKSE::MessagingInterface::kDataLoaded) {
         ObjectReferenceFilter::Install(".\\Data", ".*_OMO\\.txt$");
         ObjectManipulationManager::Install();
+
+            RE::BSFixedString std;
+        ;
+        logger::info("std: {}", std);
     }
     if (message->type == SKSE::MessagingInterface::kPostLoadGame ||
         message->type == SKSE::MessagingInterface::kNewGame) {
         ObjectManipulationManager::Clean();
     }
+
 }
 
 
