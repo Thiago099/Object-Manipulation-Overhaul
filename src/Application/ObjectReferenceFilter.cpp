@@ -22,36 +22,7 @@ ObjectReferenceFilter& ObjectReferenceFilter::Install(std::string path, std::str
     for (auto& fileName : File::Lookup(path, regex)) {
         logger::info("Loading config file: {}", fileName);
         for (auto& line : File::ReadAllLines(fileName)) {
-            auto itemGroups = bodyRegex.Match(line);
-            if (itemGroups.size() >= 3) {
-                auto name = Misc::ToLowerCase(itemGroups[2]);
-                auto add = itemGroups[1] == "+";
-                auto parameters = parametersRegex.MatchAll(itemGroups[3]);
-                if (parameters.size() >= 1) {
-                    auto priority = 0;
-                    bool hasPriority = false;
-                    try {
-                        priority = std::stoi(parameters[0][1]);
-                        hasPriority = true;
-                    }
-                    catch (const std::invalid_argument&) {
-                    }
-                    if (hasPriority) {
-                        std::vector<std::string> props;
-                        if (parameters.size() >= 2) {
-                            parameters.erase(parameters.begin());
-                            for (auto& item : parameters) {
-                                props.push_back(item[1]);
-                            }
-                        } 
-                        items.push_back(Item(priority, add, name, props));
-                    } else {
-                        logger::info("Expecting priority to be a number, got: {}", parameters[0][1]);
-                    }
-                } else {
-                    logger::error("missing priority: {}", name);
-                }
-            }
+            ProcessFilterItem(line, items);
         }
     }
     std::sort(items.begin(), items.end(), [](Item& a, Item& b) { 
@@ -61,6 +32,38 @@ ObjectReferenceFilter& ObjectReferenceFilter::Install(std::string path, std::str
         AddLine(item);
     }
     return group;
+}
+
+void ObjectReferenceFilter::ProcessFilterItem(std::string& line, std::vector<Item>& items) {
+    auto itemGroups = bodyRegex.Match(line);
+    if (itemGroups.size() >= 3) {
+        auto name = Misc::ToLowerCase(itemGroups[2]);
+        auto add = itemGroups[1] == "+";
+        auto parameters = parametersRegex.MatchAll(itemGroups[3]);
+        if (parameters.size() >= 1) {
+            auto priority = 0;
+            bool hasPriority = false;
+            try {
+                priority = std::stoi(parameters[0][1]);
+                hasPriority = true;
+            } catch (const std::invalid_argument&) {
+            }
+            if (hasPriority) {
+                std::vector<std::string> props;
+                if (parameters.size() >= 2) {
+                    parameters.erase(parameters.begin());
+                    for (auto& item : parameters) {
+                        props.push_back(item[1]);
+                    }
+                }
+                items.push_back(Item(priority, add, name, props));
+            } else {
+                logger::info("Expecting priority to be a number, got: {}", parameters[0][1]);
+            }
+        } else {
+            logger::error("missing priority: {}", name);
+        }
+    }
 }
 
 void ObjectReferenceFilter::AddLine(Item& item) {

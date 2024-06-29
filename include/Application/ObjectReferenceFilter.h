@@ -47,7 +47,8 @@ class ObjectReferenceFilter {
     static inline Regex bodyRegex = Regex("^\\s*([-+])\\s*([^\\s]*)\\s*\\(\\s*([^)]*)\\s*\\)$");
     static inline Regex parametersRegex = Regex("\\s*([^,\\s]+)\\s*(?:,|$)");
     static void AddLine(Item& item);
+    static void ProcessFilterItem(std::string& line, std::vector<Item>& items);
     public:
     static bool Match(RE::TESObjectREFR* item);
-    static ObjectReferenceFilter& Install(std::string path, std::string regex);
+        static ObjectReferenceFilter& Install(std::string path, std::string regex);
 };

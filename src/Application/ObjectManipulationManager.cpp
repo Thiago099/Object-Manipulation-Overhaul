@@ -77,10 +77,16 @@ void ObjectManipulationManager::CommitDrag() {
 }
 
 void ObjectManipulationManager::Update() {
+
+
     auto obj = Selection::object;
 
-    if (!obj || !obj->Get3D()) {
+    if (!obj) {
         State::dragState = State::DragState::Idle;
+        return;
+    }
+
+    if (!obj->Get3D()) {
         return;
     }
 
@@ -210,8 +216,8 @@ bool ObjectManipulationManager::ProcessActiveInputState(RE::InputEvent* current)
 void ObjectManipulationManager::ProcessIdleInputState(RE::InputEvent * current) {
         if (auto button = current->AsButtonEvent()) {
             if (button->IsDown() && button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
-                if (static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode()) ==
-                    RE::BSWin32MouseDevice::Key::kMiddleButton) {
+                auto mouseButton = static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode());
+                if (mouseButton == RE::BSWin32MouseDevice::Key::kMiddleButton && button->IsDown()) {
                     auto player3d = Misc::GetPlayer3d();
 
                     const auto evaluator = [player3d](RE::NiAVObject* obj) {
@@ -219,13 +225,10 @@ void ObjectManipulationManager::ProcessIdleInputState(RE::InputEvent * current) 
                             return false;
                         }
                         return true;
-
                     };
                     if (auto ref = RayCast::GetObjectAtCursor(evaluator, 1000)) {
-                        if (button->IsDown()) {
-                            if (ObjectReferenceFilter::Match(ref)) {
-                                StartDraggingObject(ref);
-                            }
+                        if (ObjectReferenceFilter::Match(ref)) {
+                            StartDraggingObject(ref);
                         }
                     }
                 }

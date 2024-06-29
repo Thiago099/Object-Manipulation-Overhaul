@@ -20,7 +20,8 @@ void RayCollector::AddRayHit(const RE::hkpCdBody& body, const RE::hkpShapeRayCas
     const auto flags = collisionObj->broadPhaseHandle.collisionFilterInfo;
 
     const uint64_t m = 1ULL << static_cast<uint64_t>(flags);
-    constexpr uint64_t filter = 0x40122716;  //@TODO
+
+    constexpr uint64_t filter = 0x40122736;  //@TODO
     if ((m & filter) != 0) {
         if (!evaluator(hit.getAVObject())) {
             return;
