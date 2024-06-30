@@ -5,5 +5,5 @@
 #include "Application/UI.h"
 #include "Application/KeyConfiguration.h"
 #include "Application/ObjectManipulationManager.h"
-#include "Application/ObjectReferenceFilter.h"
+#include "Application/ObjectReferenceFilterConfiguration.h"
 #include "Interface/Papyrus.h"

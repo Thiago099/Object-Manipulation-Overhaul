@@ -1,4 +1,4 @@
-#include "Application/ObjectReferenceFilter.h"
+#include "Application/ObjectReferenceFilterConfiguration.h"
 
 
 bool ObjectReferenceFilter::Match(RE::TESObjectREFR* item) {

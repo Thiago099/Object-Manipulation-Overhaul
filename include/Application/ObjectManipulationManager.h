@@ -3,7 +3,7 @@
 #include "Lib/Raycast.h"
 #include "Lib/Misc.h"
 #include "Lib/InputManager.h"
-#include "Application/ObjectReferenceFilter.h"
+#include "Application/ObjectReferenceFilterConfiguration.h"
 #define M_PI 3.14159265358979323846
 
 class ObjectManipulationManager {

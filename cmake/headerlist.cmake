@@ -3,7 +3,7 @@ set(HEADER_FILES
 	include/Plugin.h
 	include/Application/UI.h
 	include/Application/ObjectManipulationManager.h
-	include/Application/ObjectReferenceFilter.h
+	include/Application/ObjectReferenceFilterConfiguration.h
 	include/Application/KeyConfiguration.h
 	include/Lib/logger.h
 	include/Lib/SKSEMenuFramework.h
