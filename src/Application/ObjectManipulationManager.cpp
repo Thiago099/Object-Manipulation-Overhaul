@@ -182,7 +182,7 @@ bool ObjectManipulationManager::UpdatePlaceholderPosition() {
     return false;
 }
 
-bool ObjectManipulationManager::ProcessActiveInputState(RE::InputEvent* current) {
+bool ObjectManipulationManager::BlockActivateButton(RE::InputEvent* current) {
     bool suppress = false;
     if (auto button = current->AsButtonEvent()) {
         if (button->GetDevice() == RE::INPUT_DEVICE::kKeyboard) {
@@ -233,12 +233,23 @@ bool ObjectManipulationManager::ProcessActiveInputState(RE::InputEvent* current)
             //Zoom Out
             auto control = RE::ControlMap::GetSingleton();
             if (control) {
-                if (key == static_cast<RE::BSKeyboardDevice::Key>(
-                               control->GetMappedKey("Activate", RE::INPUT_DEVICE::kKeyboard))) {
+                if (key == static_cast<RE::BSKeyboardDevice::Key>(control->GetMappedKey("Activate", RE::INPUT_DEVICE::kKeyboard))) 
+                {
                     return true;
                 }
             }
         }
+        if (button->GetDevice() == RE::INPUT_DEVICE::kGamepad) {
+            auto key = static_cast<RE::BSWin32GamepadDevice::Key>(button->GetIDCode());
+            auto control = RE::ControlMap::GetSingleton();
+            if (control) {
+                if (key == static_cast<RE::BSWin32GamepadDevice::Key>(control->GetMappedKey("Activate", RE::INPUT_DEVICE::kGamepad))) 
+                {
+                    return true;
+                }
+            }
+        }
+            auto key = static_cast<RE::BSKeyboardDevice::Key>(button->GetIDCode());
     }
     return false;
 }
@@ -259,7 +270,7 @@ void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEvent
         size_t length = 0;
         for (auto current = *a_event; current; current = current->next) {
 
-            bool suppress = ProcessActiveInputState(current);
+            bool suppress = BlockActivateButton(current);
             if (auto button = current->AsButtonEvent()) {
                 if (Input::activeInputManager->ProcessInput(button)) {
                     suppress = true;

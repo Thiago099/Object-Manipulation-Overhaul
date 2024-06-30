@@ -8,6 +8,10 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         ObjectReferenceFilter::Install(".\\Data", ".*_OMO\\.txt$");
         ObjectManipulationManager::Install();
     }
+    if (message->type == SKSE::MessagingInterface::kPreLoadGame) {
+        ObjectManipulationManager::Clean();
+    }
+
     if (message->type == SKSE::MessagingInterface::kPostLoadGame ||
         message->type == SKSE::MessagingInterface::kNewGame) {
         ObjectManipulationManager::Clean();
