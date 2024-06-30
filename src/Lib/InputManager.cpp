@@ -39,6 +39,21 @@ bool InputManager::HasSink(std::string actionName) {
     auto actionIterator = actions.find(GetId(actionName));
     return actionIterator != actions.end();
 }
+bool InputManager::HasSource(std::string actionName) {
+    actionName = Misc::ToLowerCase(actionName);
+    auto id = GetId(actionName);
+    for (const auto & [ device, deviceData ] : inputs) {
+        for (const auto & [ key, keyData ] : deviceData) {
+            for (const auto& action : keyData) {
+                if (action == id) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 void InputManager::AddSink(std::string actionName, std::function<void(RE::ButtonEvent*)> const & callback) {
     actionName = Misc::ToLowerCase(actionName);
     actions.insert(std::make_pair(GetId(actionName),callback));

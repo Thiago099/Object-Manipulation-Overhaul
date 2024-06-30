@@ -12,6 +12,8 @@
     Input::activeInputManager->AddSink("ToggleMoveRotate", Input::ActiveState::ToggleMoveRotate);
     Input::activeInputManager->AddSink("TranslateLeft", Input::ActiveState::TranslateLeft);
     Input::activeInputManager->AddSink("TranslateRight", Input::ActiveState::TranslateRight);
+    Input::activeInputManager->AddSink("MoveUp", Input::ActiveState::MoveUp);
+    Input::activeInputManager->AddSink("MoveDown", Input::ActiveState::MoveDown);
     Input::activeInputManager->AddSink("Cancel", Input::ActiveState::Cancel);
     Input::activeInputManager->AddSink("Commit", Input::ActiveState::Commit);
 
@@ -28,7 +30,7 @@ void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
         Selection::angleOffset = Misc::NormalizeAngle(refr->GetAngle().z - std::atan2(cameraPosition.x - Selection::lastPosition.x,
                                                                  cameraPosition.y - Selection::lastPosition.y));
         Selection::positionOffset = RE::NiPoint3(0, 0, 0);
-        Input::isControlKeyDown = false;
+        Input::isToggleKeyDown = false;
         Selection::object = refr;
         State::validState = State::ValidState::None;
         State::dragState = State::DragState::Initializing;
@@ -141,6 +143,10 @@ void ObjectManipulationManager::Update() {
 InputManager* ObjectManipulationManager::GetPassiveInputManager() { return Input::passiveInputManager; }
 
 InputManager* ObjectManipulationManager::GetActiveInputManager() { return Input::activeInputManager; }
+
+void ObjectManipulationManager::SetdoToggleWithToggleKey(bool value) {
+    Input::doToggleWithToggleKey = value;
+}
 
 void ObjectManipulationManager::Clean() {
     State::dragState = State::DragState::Idle;
@@ -262,26 +268,34 @@ void ObjectManipulationManager::Input::PassiveState::Pick(RE::ButtonEvent* butto
 
 void ObjectManipulationManager::Input::ActiveState::ToggleMoveRotate(RE::ButtonEvent* button) {
     if (button->IsDown()) {
-        Input::isControlKeyDown = true;
+        Input::isToggleKeyDown = true;
     } else if (button->IsUp()) {
-        Input::isControlKeyDown = false;
+        Input::isToggleKeyDown = false;
     }
 }
 
 void ObjectManipulationManager::Input::ActiveState::TranslateLeft(RE::ButtonEvent* button) {
-    if (Input::isControlKeyDown) {
-        Selection::positionOffset.z += 1.f;
-    } else {
+    if (!Input::doToggleWithToggleKey || !Input::isToggleKeyDown) {
         Selection::angleOffset = Misc::NormalizeAngle(Selection::angleOffset + M_PI / 30);
     }
 }
 
 void ObjectManipulationManager::Input::ActiveState::TranslateRight(RE::ButtonEvent* button) {
-    if (Input::isControlKeyDown) {
-        Selection::positionOffset.z -= 1.f;
-    } else {
+    if (!Input::doToggleWithToggleKey || !Input::isToggleKeyDown) {
         Selection::angleOffset = Misc::NormalizeAngle(Selection::angleOffset - M_PI / 30);
     }
+}
+
+void ObjectManipulationManager::Input::ActiveState::MoveUp(RE::ButtonEvent* button) {
+    if (!Input::doToggleWithToggleKey || Input::isToggleKeyDown) {
+        Selection::positionOffset.z += 1.f;
+    }
+}
+
+void ObjectManipulationManager::Input::ActiveState::MoveDown(RE::ButtonEvent* button) {
+    if (!Input::doToggleWithToggleKey || Input::isToggleKeyDown) {
+        Selection::positionOffset.z -= 1.f;
+    } 
 }
 
 void ObjectManipulationManager::Input::ActiveState::Cancel(RE::ButtonEvent* button) {

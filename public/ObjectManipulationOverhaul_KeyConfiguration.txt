@@ -1,7 +1,0 @@
-Pick                ( Mouse,     MiddleButton)
-ToggleMoveRotate    ( Keyboard,  RightControl)
-ToggleMoveRotate    ( Keyboard,  LeftControl)
-TranslateLeft       ( Mouse,     WheelUp)
-TranslateRight      ( Mouse,     WheelDown)
-Cancel              ( Mouse,     RightButton)
-Commit              ( Mouse,     LeftButton)

@@ -1,0 +1,10 @@
+Removes all forms
++All(0)
+-FormType(100, Static)
+-FormType(100, NPC)
+-FormType(100, Door)
+-FormType(100, MovableStatic)
+-FormType(100, Flora)
+-FormType(100, Tree)
+# -FormId(100,ccbgssse005-goldbrand.esl, 809)
+# -FormId(100,135BA)

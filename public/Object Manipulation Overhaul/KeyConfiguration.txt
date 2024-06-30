@@ -1,0 +1,11 @@
+# Action,			Device,			Key,
+
+ Pick,				Mouse,			MiddleButton
+ ToggleMoveRotate,	Keyboard,		RightControl
+ ToggleMoveRotate,	Keyboard,		LeftControl
+ TranslateLeft,		Mouse,			WheelUp
+ TranslateRight,	Mouse,			WheelDown
+ MoveUp,			Mouse,			WheelUp
+ MoveDown,			Mouse,			WheelDown
+ Cancel,			Mouse,			RightButton
+ Commit,			Mouse,			LeftButton

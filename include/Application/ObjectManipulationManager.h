@@ -41,7 +41,8 @@ class ObjectManipulationManager {
             static void thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher, RE::InputEvent* const* a_event);
             static inline REL::Relocation<decltype(thunk)> originalFunction;
         };
-        static inline bool isControlKeyDown = false;
+        static inline bool doToggleWithToggleKey = false;
+        static inline bool isToggleKeyDown = false;
         static inline InputManager* passiveInputManager = new InputManager();
         static inline InputManager* activeInputManager = new InputManager();
 
@@ -55,6 +56,8 @@ class ObjectManipulationManager {
             static void ToggleMoveRotate(RE::ButtonEvent* button);
             static void TranslateLeft(RE::ButtonEvent* button);
             static void TranslateRight(RE::ButtonEvent* button);
+            static void MoveUp(RE::ButtonEvent* button);
+            static void MoveDown(RE::ButtonEvent* button);
             static void Cancel(RE::ButtonEvent* button);
             static void Commit(RE::ButtonEvent* button);
         };
@@ -70,6 +73,7 @@ class ObjectManipulationManager {
     public:
     static InputManager* GetPassiveInputManager();
     static InputManager* GetActiveInputManager();
+    static void SetdoToggleWithToggleKey(bool value);
     static void Clean();
     static void Install();
     static void StartDraggingObject(RE::TESObjectREFR* obj);

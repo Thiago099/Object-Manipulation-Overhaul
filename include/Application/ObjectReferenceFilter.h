@@ -44,7 +44,7 @@ class FormIdFilterItem : public FilterItem {
 };
 class ObjectReferenceFilter {
     static inline std::vector<FilterItem*> filters;
-    static inline Regex bodyRegex = Regex("^\\s*([-+])\\s*([^\\s]*)\\s*\\(\\s*([^)]*)\\s*\\)$");
+    static inline Regex bodyRegex = Regex("^\\s*([-+])\\s*([^\\s]*)\\s*\\(\\s*([^)]*)\\s*\\)");
     static inline Regex parametersRegex = Regex("\\s*([^,\\s]+)\\s*(?:,|$)");
     static void AddLine(Item& item);
     static void ProcessFilterItem(std::string& line, std::vector<Item>& items);
