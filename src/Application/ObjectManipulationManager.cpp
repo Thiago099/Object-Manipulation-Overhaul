@@ -88,6 +88,12 @@ void ObjectManipulationManager::CommitDrag() {
     if (Misc::IsStatic(Selection::objectOriginalCollisionLayer)) {
         ResetCollision();
         obj->SetPosition(obj->GetPosition());
+    } else {
+        SKSE::GetTaskInterface()->AddTask([obj]() {
+            if (obj) {
+                obj->Update3DPosition(true);
+            }
+        });
     }
 }
 
