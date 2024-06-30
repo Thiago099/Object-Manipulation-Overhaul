@@ -84,7 +84,78 @@ void Misc::MoveTo_Impl(RE::TESObjectREFR* ref, const RE::ObjectRefHandle& a_targ
     REL::Relocation<func_t> func{RE::Offset::TESObjectREFR::MoveTo};
     return func(ref, a_targetHandle, a_targetCell, a_selfWorldSpace, a_position, a_rotation);
 }
+// https://ck.uesp.net/wiki/GetMappedKey_-_Input
+// Activate
+// Auto-Move
+// Back
+// CameraPath
+// Console
+// Favorites
+// Forward
+// Hotkey1
+// Hotkey2
+// Hotkey3
+// Hotkey4
+// Hotkey5
+// Hotkey6
+// Hotkey7
+// Hotkey8
+// Journal
+// Jump
+// Left Attack/Block
+// Look
+// Move
+// Multi-Screenshot
+// Pause
+// Quick Inventory
+// Quick Magic
+// Quick Map
+// Quick Stats
+// Quickload
+// Quicksave
+// Ready Weapon
+// Right Attack/Block
+// Run
+// Screenshot
+// Shout
+// Sneak
+// Sprint
+// Strafe Left
+// Strafe Right
+// Toggle Always Run
+// Toggle POV
+// Tween Menu
+// Wait
+// Zoom In
+// Zoom Out
+bool Misc::DoesButtonTriggerAction(RE::ButtonEvent* button, std::string action) {
+    auto control = RE::ControlMap::GetSingleton();
+    if (control) {
 
+        if (button->GetDevice() == RE::INPUT_DEVICE::kKeyboard) {
+            auto key = static_cast<RE::BSKeyboardDevice::Key>(button->GetIDCode());
+            if (key == static_cast<RE::BSKeyboardDevice::Key>(
+                            control->GetMappedKey(action, RE::INPUT_DEVICE::kKeyboard))) {
+                return true;
+            }
+        }
+        if (button->GetDevice() == RE::INPUT_DEVICE::kGamepad) {
+            auto key = static_cast<RE::BSWin32GamepadDevice::Key>(button->GetIDCode());
+            if (key == static_cast<RE::BSWin32GamepadDevice::Key>(
+                            control->GetMappedKey(action, RE::INPUT_DEVICE::kGamepad))) {
+                return true;
+            }
+        }
+        if (button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
+            auto key = static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode());
+            if (key == static_cast<RE::BSWin32MouseDevice::Key>(
+                           control->GetMappedKey(action, RE::INPUT_DEVICE::kMouse))) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
 std::vector<std::string> formTypes =
     {

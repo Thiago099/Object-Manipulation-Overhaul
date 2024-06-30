@@ -183,71 +183,9 @@ bool ObjectManipulationManager::UpdatePlaceholderPosition() {
 bool ObjectManipulationManager::BlockActivateButton(RE::InputEvent* current) {
     bool suppress = false;
     if (auto button = current->AsButtonEvent()) {
-        if (button->GetDevice() == RE::INPUT_DEVICE::kKeyboard) {
-            auto key = static_cast<RE::BSKeyboardDevice::Key>(button->GetIDCode());
-            //https://ck.uesp.net/wiki/GetMappedKey_-_Input
-            //Activate
-            //Auto-Move
-            //Back
-            //CameraPath
-            //Console
-            //Favorites
-            //Forward
-            //Hotkey1
-            //Hotkey2
-            //Hotkey3
-            //Hotkey4
-            //Hotkey5
-            //Hotkey6
-            //Hotkey7
-            //Hotkey8
-            //Journal
-            //Jump
-            //Left Attack/Block
-            //Look
-            //Move
-            //Multi-Screenshot
-            //Pause
-            //Quick Inventory
-            //Quick Magic
-            //Quick Map
-            //Quick Stats
-            //Quickload
-            //Quicksave
-            //Ready Weapon
-            //Right Attack/Block
-            //Run
-            //Screenshot
-            //Shout
-            //Sneak
-            //Sprint
-            //Strafe Left
-            //Strafe Right
-            //Toggle Always Run
-            //Toggle POV
-            //Tween Menu
-            //Wait
-            //Zoom In
-            //Zoom Out
-            auto control = RE::ControlMap::GetSingleton();
-            if (control) {
-                if (key == static_cast<RE::BSKeyboardDevice::Key>(control->GetMappedKey("Activate", RE::INPUT_DEVICE::kKeyboard))) 
-                {
-                    return true;
-                }
-            }
+        if(Misc::DoesButtonTriggerAction(button, "Activate")){
+            return true;
         }
-        if (button->GetDevice() == RE::INPUT_DEVICE::kGamepad) {
-            auto key = static_cast<RE::BSWin32GamepadDevice::Key>(button->GetIDCode());
-            auto control = RE::ControlMap::GetSingleton();
-            if (control) {
-                if (key == static_cast<RE::BSWin32GamepadDevice::Key>(control->GetMappedKey("Activate", RE::INPUT_DEVICE::kGamepad))) 
-                {
-                    return true;
-                }
-            }
-        }
-            auto key = static_cast<RE::BSKeyboardDevice::Key>(button->GetIDCode());
     }
     return false;
 }
