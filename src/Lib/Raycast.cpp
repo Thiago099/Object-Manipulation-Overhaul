@@ -22,7 +22,7 @@ RE::NiPoint3 angles2dir(const RE::NiPoint3& angles) {
     return ans;
 }
 enum class LineOfSightLocation : uint32_t { kNone, kEyes, kHead, kTorso, kFeet };
-RE::NiPoint3 QuaternionToEuler(const RE::NiQuaternion& q) {
+RE::NiPoint3 RayCast::QuaternionToEuler(const RE::NiQuaternion& q) {
     RE::NiPoint3 euler;
 
     double sinr_cosp = 2 * (q.w * q.x + q.y * q.z);

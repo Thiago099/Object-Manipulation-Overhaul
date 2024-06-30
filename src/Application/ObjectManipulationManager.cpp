@@ -1,5 +1,4 @@
 #include "Application/ObjectManipulationManager.h"
-
  void ObjectManipulationManager::Install() {
     auto builder = new HookBuilder();
     builder->AddCall<Input::ProcessInputQueueHook, 5, 14>(67315, 0x7B, 68617, 0x7B, 0xC519E0, 0x81);
@@ -18,6 +17,13 @@
     Input::activeInputManager->AddSink("Commit", Input::ActiveState::Commit);
 
 
+    Input::activeInputManager->AddSink("ZRotationPlus", Input::ActiveState::ZRotationPlus);
+    Input::activeInputManager->AddSink("ZRotationMinus", Input::ActiveState::ZRotationMinus);
+    Input::activeInputManager->AddSink("XRotationPlus", Input::ActiveState::XRotationPlus);
+    Input::activeInputManager->AddSink("XRotationMinus", Input::ActiveState::XRotationMinus);
+    Input::activeInputManager->AddSink("YRotationPlus", Input::ActiveState::YRotationPlus);
+    Input::activeInputManager->AddSink("YRotationMinus", Input::ActiveState::YRotationMinus);
+
 
  }
 
@@ -27,9 +33,8 @@ void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
         Selection::lastPosition = refr->GetPosition();
         Selection::lastAngle = refr->GetAngle();
         auto [cameraAngle, cameraPosition] = RayCast::GetCameraData();
-        Selection::angleOffset = Misc::NormalizeAngle(refr->GetAngle().z - std::atan2(cameraPosition.x - Selection::lastPosition.x,
-                                                                 cameraPosition.y - Selection::lastPosition.y));
         Selection::positionOffset = RE::NiPoint3(0, 0, 0);
+        Selection::angleOffset = RE::NiPoint3(0, 0, 0);
         Input::isToggleKeyDown = false;
         Selection::object = refr;
         State::validState = State::ValidState::None;
@@ -129,10 +134,7 @@ void ObjectManipulationManager::Update() {
 
 
     Misc::SetPosition(obj, rayPostion + Selection::positionOffset);
-    Misc::SetAngle(
-        obj, RE::NiPoint3(0, 0,
-                                     std::atan2(cameraPosition.x - rayPostion.x, cameraPosition.y - rayPostion.y) +
-                                         Selection::angleOffset));
+    Misc::SetAngle(obj,Selection::angleOffset);
 
     obj->Update3DPosition(true);
 
@@ -202,8 +204,18 @@ bool ObjectManipulationManager::BlockActivateButton(RE::InputEvent* current) {
     return false;
 }
 
+glm::vec3 extractEulerAngles(const glm::mat3& R) {
+    float pitch = asin(-R[2][0]);
+    float yaw = atan2(R[1][0], R[0][0]);
+    float roll = atan2(R[2][1], R[2][2]);
+
+    return glm::vec3(yaw, pitch, roll);
+}
+
+
 void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
                                                              RE::InputEvent* const* a_event) {
+
     if (State::dragState != State::DragState::Idle) {
         if (State::dragState == State::DragState::Initializing) {
             TryInitialize();
@@ -219,6 +231,65 @@ void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEvent
         for (auto current = *a_event; current; current = current->next) {
 
             bool suppress = BlockActivateButton(current);
+            if (Input::isToggleKeyDown) {
+            if (auto move = current->AsMouseMoveEvent() ) {
+                suppress = true;
+                auto sensitivity = 0.01;
+
+                float yaw = move->mouseInputX * sensitivity;
+                float pitch = move->mouseInputY * sensitivity;
+
+                auto [angQ, camera_pos] = RayCast::GetCameraData();
+                auto ang = RayCast::QuaternionToEuler(angQ);
+                //auto object_pos = Selection::object->GetPosition();
+                //auto az = -std::atan2(camera_pos.x - object_pos.x, camera_pos.y - object_pos.y);
+                //auto ay = -std::atan2(camera_pos.x - object_pos.x, camera_pos.z - object_pos.z);
+                //auto ax = std::atan2(camera_pos.z - object_pos.z, camera_pos.y - object_pos.y);
+
+                
+
+                //Selection::angleOffset.x += (- deltax * sin(az) + deltay * cos(az));
+                //Selection::angleOffset.y += (deltay * sin(az) + deltax * cos(az));
+
+                
+
+
+                auto x = Selection::angleOffset.x;
+                auto y = Selection::angleOffset.y;
+                auto z = Selection::angleOffset.z;
+
+                //Selection::angleOffset.x += (-deltax * sin(az) + deltay * cos(az));
+                //Selection::angleOffset.y += (deltay * sin(az) + deltax * cos(az));
+
+                glm::mat4 rotationMatrix = glm::mat4(1.0f);
+
+
+                rotationMatrix = glm::rotate(rotationMatrix,-x, glm::vec3(1.0f, 0.0f, 0.0f));
+                rotationMatrix = glm::rotate(rotationMatrix,-y, glm::vec3(0.0f, 1.0f, 0.0f));
+                rotationMatrix = glm::rotate(rotationMatrix,-x, glm::vec3(0.0f, 0.0f, 1.0f));
+
+                rotationMatrix = glm::rotate(rotationMatrix, yaw, glm::vec3(1.0f, 0.0f, 0.0f));
+                rotationMatrix = glm::rotate(rotationMatrix, pitch, glm::vec3(0.0f, 0.0f, 1.0f));
+
+                float newYaw = atan2(rotationMatrix[1][0], rotationMatrix[0][0]);
+                float newPitch = asin(-rotationMatrix[2][0]);
+                float newRoll = atan2(rotationMatrix[2][1], rotationMatrix[2][2]);
+
+                Selection::angleOffset.x = newYaw;
+                Selection::angleOffset.y = newPitch;
+                Selection::angleOffset.z = newRoll;
+
+                //logger::info("{}", deltax);
+
+                 //Selection::angleOffset.z -= deltax;
+                 //Selection::angleOffset.x += deltay * cos(az);
+                 //Selection::angleOffset.y += deltay * sin(az);
+
+
+                //logger::info("sin: {}, cos: {}", newYaw, newPitch);
+            }
+            }
+
             if (auto button = current->AsButtonEvent()) {
                 if (Input::activeInputManager->ProcessInput(button)) {
                     suppress = true;
@@ -282,13 +353,11 @@ void ObjectManipulationManager::Input::ActiveState::ToggleMoveRotate(RE::ButtonE
 
 void ObjectManipulationManager::Input::ActiveState::TranslateLeft(RE::ButtonEvent* button) {
     if (!Input::doToggleWithToggleKey || !Input::isToggleKeyDown) {
-        Selection::angleOffset = Misc::NormalizeAngle(Selection::angleOffset + M_PI / 30);
     }
 }
 
 void ObjectManipulationManager::Input::ActiveState::TranslateRight(RE::ButtonEvent* button) {
     if (!Input::doToggleWithToggleKey || !Input::isToggleKeyDown) {
-        Selection::angleOffset = Misc::NormalizeAngle(Selection::angleOffset - M_PI / 30);
     }
 }
 
@@ -317,3 +386,28 @@ void ObjectManipulationManager::Input::ActiveState::Commit(RE::ButtonEvent* butt
         }
     }
 }
+
+
+void ObjectManipulationManager::Input::ActiveState::ZRotationPlus(RE::ButtonEvent* button) {
+    Selection::angleOffset.x += 0.01;
+}
+
+void ObjectManipulationManager::Input::ActiveState::ZRotationMinus(RE::ButtonEvent* button) {
+
+}
+
+void ObjectManipulationManager::Input::ActiveState::XRotationPlus(RE::ButtonEvent* button) {
+    Selection::angleOffset.y += 0.01;
+}
+
+void ObjectManipulationManager::Input::ActiveState::XRotationMinus(RE::ButtonEvent* button) {
+
+}
+void ObjectManipulationManager::Input::ActiveState::YRotationPlus(RE::ButtonEvent* button) {
+
+}
+
+void ObjectManipulationManager::Input::ActiveState::YRotationMinus(RE::ButtonEvent* button) {
+
+}
+

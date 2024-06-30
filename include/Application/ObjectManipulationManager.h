@@ -1,11 +1,12 @@
 #pragma once
+#include <glm/ext.hpp>
+#include <glm/glm.hpp>
 #include "Lib/HookBuilder.h"
 #include "Lib/Raycast.h"
 #include "Lib/Misc.h"
 #include "Lib/InputManager.h"
 #include "Application/ObjectReferenceFilterConfiguration.h"
 #define M_PI 3.14159265358979323846
-
 class ObjectManipulationManager {
 
     class Selection {
@@ -13,7 +14,7 @@ class ObjectManipulationManager {
         static inline RE::TESObjectREFR* object;
         static inline RE::COL_LAYER objectOriginalCollisionLayer;
 
-        static inline float angleOffset = M_PI;
+        static inline RE::NiPoint3 angleOffset;
         static inline RE::NiPoint3 positionOffset;
 
         static inline RE::NiPoint3 lastPosition;
@@ -60,6 +61,12 @@ class ObjectManipulationManager {
             static void MoveDown(RE::ButtonEvent* button);
             static void Cancel(RE::ButtonEvent* button);
             static void Commit(RE::ButtonEvent* button);
+            static void ZRotationPlus(RE::ButtonEvent* button);
+            static void ZRotationMinus(RE::ButtonEvent* button);
+            static void XRotationPlus(RE::ButtonEvent* button);
+            static void XRotationMinus(RE::ButtonEvent* button);
+            static void YRotationPlus(RE::ButtonEvent* button);
+            static void YRotationMinus(RE::ButtonEvent* button);
         };
     };
 
