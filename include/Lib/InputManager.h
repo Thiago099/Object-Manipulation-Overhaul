@@ -1,17 +1,17 @@
 #pragma once
 
-
+#include "Lib/Misc.h"
 
 class InputManager {
-    std::map<std::uint32_t, std::function<void(RE::ButtonEvent*)>const &> actions;
-    std::map<uint32_t, std::map<uint32_t, std::vector<std::uint32_t>>> inputs;
+    std::map<uint32_t, std::function<void(RE::ButtonEvent*)>> actions;
+    std::map<uint32_t, std::map<uint32_t, std::vector<uint32_t>>> inputs;
     uint32_t auto_increment = 0;
     std::map<std::string, uint32_t> idMap;
     uint32_t GetId(std::string key);
     public:
     bool ProcessInput(RE::ButtonEvent* button);
-    void AddAction(std::string actionName, std::function<void(RE::ButtonEvent*)> const & callback);
-    void AddBinding(std::string actionName, std::string deviceName, std::string buttonName);
+    void AddSink(std::string actionName, std::function<void(RE::ButtonEvent*)> const & callback);
+    void AddSource(std::string actionName, std::string deviceName, std::string buttonName);
 
 };
 

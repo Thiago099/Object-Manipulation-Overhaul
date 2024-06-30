@@ -1,6 +1,5 @@
 #include "Lib/InputManager.h"
 
-
 bool InputManager::ProcessInput(RE::ButtonEvent* button) {
     auto device = button->GetDevice();
     auto idcode = button->GetIDCode();
@@ -20,7 +19,7 @@ bool InputManager::ProcessInput(RE::ButtonEvent* button) {
         if (actionIterator == actions.end()) {
             continue;
         }
-        const auto& action = actionIterator->second;
+        auto& action = actionIterator->second;
         action(button);
         actionsExecuted = true;
     }
@@ -36,39 +35,45 @@ uint32_t InputManager::GetId(std::string key) {
     return idIterator->second;
 }
 
-void InputManager::AddAction(std::string actionName, std::function<void(RE::ButtonEvent*)> const & callback) {
+void InputManager::AddSink(std::string actionName, std::function<void(RE::ButtonEvent*)> const & callback) {
+    actionName = Misc::ToLowerCase(actionName);
     actions.insert(std::make_pair(GetId(actionName),callback));
 }
 
-void InputManager::AddBinding(std::string actionName, std::string deviceName, std::string buttonName) {
+void InputManager::AddSource(std::string actionName, std::string deviceName, std::string buttonName) {
+    actionName = Misc::ToLowerCase(actionName);
+    deviceName = Misc::ToLowerCase(deviceName);
+    buttonName = Misc::ToLowerCase(buttonName);
+
     auto deviceIterator = deviceMap.find(deviceName);
     if (deviceIterator == deviceMap.end()) {
         return;
     }
     uint32_t device = deviceIterator->second;
+    logger::info("device: {}", device);
     uint32_t idcode;
     switch (device) {
         case RE::INPUT_DEVICE::kKeyboard: {
-            auto keyIterator = keyboardMap.find(deviceName);
+            auto keyIterator = keyboardMap.find(buttonName);
             if (keyIterator == keyboardMap.end()) {
                 return;
             }
             idcode = keyIterator->second;
         } break;
         case RE::INPUT_DEVICE::kMouse: {
-            auto keyIterator = mouseMap.find(deviceName);
+            auto keyIterator = mouseMap.find(buttonName);
             if (keyIterator == mouseMap.end()) {
                 return;
             }
             idcode = keyIterator->second;
-        }
+        } break;
         case RE::INPUT_DEVICE::kGamepad: {
-            auto keyIterator = mouseMap.find(deviceName);
+            auto keyIterator = mouseMap.find(buttonName);
             if (keyIterator == mouseMap.end()) {
                 return;
             }
             idcode = keyIterator->second;
-        }
+        } break;
         default:
             break;
     }

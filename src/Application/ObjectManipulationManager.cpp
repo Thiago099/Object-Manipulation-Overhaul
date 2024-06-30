@@ -8,20 +8,20 @@
     State::stateColorMap[State::ValidState::Valid] = Misc::CreateColor(0x00CCFFaa);
     State::stateColorMap[State::ValidState::Error] = Misc::CreateColor(0xFF0000aa);
 
-    Input::passiveInputManager->AddAction("Pick", Input::PassiveState::Pick);
-    Input::activeInputManager->AddAction("ToggleMoveRotate", Input::ActiveState::ToggleMoveRotate);
-    Input::activeInputManager->AddAction("TranslatePlus", Input::ActiveState::TranslatePlus);
-    Input::activeInputManager->AddAction("TranslateMinus", Input::ActiveState::TranslateMinus);
-    Input::activeInputManager->AddAction("Cancel", Input::ActiveState::Cancel);
-    Input::activeInputManager->AddAction("Commit", Input::ActiveState::Commit);
+    Input::passiveInputManager->AddSink("Pick", Input::PassiveState::Pick);
+    Input::activeInputManager->AddSink("ToggleMoveRotate", Input::ActiveState::ToggleMoveRotate);
+    Input::activeInputManager->AddSink("TranslatePlus", Input::ActiveState::TranslatePlus);
+    Input::activeInputManager->AddSink("TranslateMinus", Input::ActiveState::TranslateMinus);
+    Input::activeInputManager->AddSink("Cancel", Input::ActiveState::Cancel);
+    Input::activeInputManager->AddSink("Commit", Input::ActiveState::Commit);
 
-    Input::passiveInputManager->AddBinding("mouse", "middlebutton", "Pick");
-    Input::passiveInputManager->AddBinding("mouse", "rightcontrol", "ToggleMoveRotate");
-    Input::passiveInputManager->AddBinding("mouse", "leftcontrol", "ToggleMoveRotate");
-    Input::passiveInputManager->AddBinding("mouse", "wheelup", "TranslatePlus");
-    Input::passiveInputManager->AddBinding("mouse", "wheeldown", "TranslateMinus");
-    Input::passiveInputManager->AddBinding("mouse", "rightbutton", "Cancel");
-    Input::passiveInputManager->AddBinding("mouse", "leftbutton", "Commit");
+    Input::passiveInputManager->AddSource("Pick", "mouse", "middlebutton");
+    Input::activeInputManager->AddSource("ToggleMoveRotate", "keyboard", "rightcontrol");
+    Input::activeInputManager->AddSource("ToggleMoveRotate", "keyboard", "leftcontrol");
+    Input::activeInputManager->AddSource("TranslatePlus", "mouse", "wheelup");
+    Input::activeInputManager->AddSource("TranslateMinus", "mouse", "wheeldown");
+    Input::activeInputManager->AddSource("Cancel", "mouse", "rightbutton");
+    Input::activeInputManager->AddSource("Commit", "mouse", "leftbutton");
 
  }
 
@@ -296,21 +296,17 @@ void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEvent
 }
 
 void ObjectManipulationManager::Input::PassiveState::Pick(RE::ButtonEvent* button) {
-    if (button->IsDown() && button->GetDevice() == RE::INPUT_DEVICE::kMouse) {
-        auto mouseButton = static_cast<RE::BSWin32MouseDevice::Key>(button->GetIDCode());
-        if (mouseButton == RE::BSWin32MouseDevice::Key::kMiddleButton && button->IsDown()) {
-            auto player3d = Misc::GetPlayer3d();
-
-            const auto evaluator = [player3d](RE::NiAVObject* obj) {
-                if (obj == player3d) {
-                    return false;
-                }
-                return true;
-            };
-            if (auto ref = RayCast::GetObjectAtCursor(evaluator, 1000)) {
-                if (ObjectReferenceFilter::Match(ref)) {
-                    StartDraggingObject(ref);
-                }
+    if (button->IsDown()) {
+        auto player3d = Misc::GetPlayer3d();
+        const auto evaluator = [player3d](RE::NiAVObject* obj) {
+            if (obj == player3d) {
+                return false;
+            }
+            return true;
+        };
+        if (auto ref = RayCast::GetObjectAtCursor(evaluator, 1000)) {
+            if (ObjectReferenceFilter::Match(ref)) {
+                StartDraggingObject(ref);
             }
         }
     }

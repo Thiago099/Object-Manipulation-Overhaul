@@ -46,11 +46,12 @@ class ObjectManipulationManager {
         static inline InputManager* activeInputManager = new InputManager();
 
         class PassiveState {
-        public:
+            public:
             static void Pick(RE::ButtonEvent* button);
         };
         class ActiveState {
             public:
+            static inline bool blockState = false;
             static void ToggleMoveRotate(RE::ButtonEvent* button);
             static void TranslatePlus(RE::ButtonEvent* button);
             static void TranslateMinus(RE::ButtonEvent* button);
@@ -64,6 +65,7 @@ class ObjectManipulationManager {
     static void ResetCollision();
     static void Update();
     static bool ProcessActiveInputState(RE::InputEvent* current);
+    static void ProcessIdleInputState(RE::InputEvent* current);
     static bool UpdatePlaceholderPosition();
     static void TryInitialize();
     public:
