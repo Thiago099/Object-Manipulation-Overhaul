@@ -53,8 +53,8 @@ class ObjectManipulationManager {
             public:
             static inline bool blockState = false;
             static void ToggleMoveRotate(RE::ButtonEvent* button);
-            static void TranslatePlus(RE::ButtonEvent* button);
-            static void TranslateMinus(RE::ButtonEvent* button);
+            static void TranslateLeft(RE::ButtonEvent* button);
+            static void TranslateRight(RE::ButtonEvent* button);
             static void Cancel(RE::ButtonEvent* button);
             static void Commit(RE::ButtonEvent* button);
         };
@@ -68,7 +68,8 @@ class ObjectManipulationManager {
     static bool UpdatePlaceholderPosition();
     static void TryInitialize();
     public:
-
+    static InputManager* GetPassiveInputManager();
+    static InputManager* GetActiveInputManager();
     static void Clean();
     static void Install();
     static void StartDraggingObject(RE::TESObjectREFR* obj);

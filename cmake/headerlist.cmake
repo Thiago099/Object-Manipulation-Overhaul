@@ -4,6 +4,7 @@ set(HEADER_FILES
 	include/Application/UI.h
 	include/Application/ObjectManipulationManager.h
 	include/Application/ObjectReferenceFilter.h
+	include/Application/KeyConfiguration.h
 	include/Lib/logger.h
 	include/Lib/SKSEMenuFramework.h
 	include/Lib/HookBuilder.h

@@ -39,5 +39,4 @@ void __stdcall UI::Menu1::Render() {
             name = "not found";
         }
     }
-    ImGui::Text(std::format("Name: {}, HasId:{}, Id:{:x}", name, hasId ? "Yes" : "No", id).c_str());
 }

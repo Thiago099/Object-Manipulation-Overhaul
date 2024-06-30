@@ -75,7 +75,7 @@ void ObjectReferenceFilter::AddLine(Item& item) {
             current->value = item.value;
             filters.push_back(current);
 
-            logger::trace("All filter, add: {}", item.value);
+            //logger::trace("All filter, add: {}", item.value);
         } else {
             logger::error("invalid parameter count {} for {}", item.props.size(), item.type);
         }
@@ -85,7 +85,7 @@ void ObjectReferenceFilter::AddLine(Item& item) {
             current->value = item.value;
             current->formType = Misc::StringToFormType(item.props[0]);
             filters.push_back(current);
-            logger::trace("form type filter, add: {}, formType: {} ({})", item.value, current->formType,item.props[0]);
+            //logger::trace("form type filter, add: {}, formType: {} ({})", item.value, current->formType,item.props[0]);
         } else {
             logger::error("invalid parameter count {} for {}", item.props.size(), item.type);
         }
@@ -113,7 +113,7 @@ void ObjectReferenceFilter::AddLine(Item& item) {
             auto current = new FormIdFilterItem();
             current->value = item.value;
             current->formId = formId;
-            logger::trace("Form Id Filter, add: {}, formId{:x}", item.value, formId);
+            //logger::trace("Form Id Filter, add: {}, formId{:x}", item.value, formId);
             filters.push_back(current);
         }
     }

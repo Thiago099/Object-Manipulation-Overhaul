@@ -3,6 +3,7 @@ set(SOURCE_FILES
 	src/Application/UI.cpp
 	src/Application/ObjectManipulationManager.cpp
 	src/Application/ObjectReferenceFilter.cpp
+	src/Application/KeyConfiguration.cpp
 	src/Lib/Raycast.cpp
 	src/Lib/RayCollector.cpp
 	src/Lib/Misc.cpp

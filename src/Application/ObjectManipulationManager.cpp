@@ -10,18 +10,12 @@
 
     Input::passiveInputManager->AddSink("Pick", Input::PassiveState::Pick);
     Input::activeInputManager->AddSink("ToggleMoveRotate", Input::ActiveState::ToggleMoveRotate);
-    Input::activeInputManager->AddSink("TranslatePlus", Input::ActiveState::TranslatePlus);
-    Input::activeInputManager->AddSink("TranslateMinus", Input::ActiveState::TranslateMinus);
+    Input::activeInputManager->AddSink("TranslateLeft", Input::ActiveState::TranslateLeft);
+    Input::activeInputManager->AddSink("TranslateRight", Input::ActiveState::TranslateRight);
     Input::activeInputManager->AddSink("Cancel", Input::ActiveState::Cancel);
     Input::activeInputManager->AddSink("Commit", Input::ActiveState::Commit);
 
-    Input::passiveInputManager->AddSource("Pick", "mouse", "middlebutton");
-    Input::activeInputManager->AddSource("ToggleMoveRotate", "keyboard", "rightcontrol");
-    Input::activeInputManager->AddSource("ToggleMoveRotate", "keyboard", "leftcontrol");
-    Input::activeInputManager->AddSource("TranslatePlus", "mouse", "wheelup");
-    Input::activeInputManager->AddSource("TranslateMinus", "mouse", "wheeldown");
-    Input::activeInputManager->AddSource("Cancel", "mouse", "rightbutton");
-    Input::activeInputManager->AddSource("Commit", "mouse", "leftbutton");
+
 
  }
 
@@ -143,6 +137,10 @@ void ObjectManipulationManager::Update() {
     // logger::info("Water: {}, name: {}", obj->IsInWater(),
     //                  RE::TES::GetSingleton()->GetLandTexture(rayPostion)->materialType->materialName);
 }
+
+InputManager* ObjectManipulationManager::GetPassiveInputManager() { return Input::passiveInputManager; }
+
+InputManager* ObjectManipulationManager::GetActiveInputManager() { return Input::activeInputManager; }
 
 void ObjectManipulationManager::Clean() {
     State::dragState = State::DragState::Idle;
@@ -332,7 +330,7 @@ void ObjectManipulationManager::Input::ActiveState::ToggleMoveRotate(RE::ButtonE
     }
 }
 
-void ObjectManipulationManager::Input::ActiveState::TranslatePlus(RE::ButtonEvent* button) {
+void ObjectManipulationManager::Input::ActiveState::TranslateLeft(RE::ButtonEvent* button) {
     if (Input::isControlKeyDown) {
         Selection::positionOffset.z += 1.f;
     } else {
@@ -340,7 +338,7 @@ void ObjectManipulationManager::Input::ActiveState::TranslatePlus(RE::ButtonEven
     }
 }
 
-void ObjectManipulationManager::Input::ActiveState::TranslateMinus(RE::ButtonEvent* button) {
+void ObjectManipulationManager::Input::ActiveState::TranslateRight(RE::ButtonEvent* button) {
     if (Input::isControlKeyDown) {
         Selection::positionOffset.z -= 1.f;
     } else {

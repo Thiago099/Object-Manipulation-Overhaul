@@ -34,7 +34,11 @@ uint32_t InputManager::GetId(std::string key) {
     }
     return idIterator->second;
 }
-
+bool InputManager::HasSink(std::string actionName) {
+    actionName = Misc::ToLowerCase(actionName);
+    auto actionIterator = actions.find(GetId(actionName));
+    return actionIterator != actions.end();
+}
 void InputManager::AddSink(std::string actionName, std::function<void(RE::ButtonEvent*)> const & callback) {
     actionName = Misc::ToLowerCase(actionName);
     actions.insert(std::make_pair(GetId(actionName),callback));
@@ -50,7 +54,6 @@ void InputManager::AddSource(std::string actionName, std::string deviceName, std
         return;
     }
     uint32_t device = deviceIterator->second;
-    logger::info("device: {}", device);
     uint32_t idcode;
     switch (device) {
         case RE::INPUT_DEVICE::kKeyboard: {

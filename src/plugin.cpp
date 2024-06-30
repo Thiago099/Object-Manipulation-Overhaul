@@ -7,6 +7,8 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
     if (message->type == SKSE::MessagingInterface::kDataLoaded) {
         ObjectReferenceFilter::Install(".\\Data", ".*_OMO\\.txt$");
         ObjectManipulationManager::Install();
+        KeyConfiguration::Install(".\\Data\\ObjectManipulationOverhaul_KeyConfiguration.txt");
+
     }
     if (message->type == SKSE::MessagingInterface::kPreLoadGame) {
         ObjectManipulationManager::Clean();

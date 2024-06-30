@@ -9,6 +9,7 @@ class InputManager {
     std::map<std::string, uint32_t> idMap;
     uint32_t GetId(std::string key);
     public:
+    bool HasSink(std::string actionName);
     bool ProcessInput(RE::ButtonEvent* button);
     void AddSink(std::string actionName, std::function<void(RE::ButtonEvent*)> const & callback);
     void AddSource(std::string actionName, std::string deviceName, std::string buttonName);
