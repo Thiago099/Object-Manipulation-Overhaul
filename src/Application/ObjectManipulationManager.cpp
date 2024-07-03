@@ -146,6 +146,8 @@ InputManager* ObjectManipulationManager::GetPassiveInputManager() { return Input
 
 InputManager* ObjectManipulationManager::GetActiveInputManager() { return Input::activeInputManager; }
 
+ObjectReferenceFilter* ObjectManipulationManager::GetRaycastReferenceFilter() { return Selection::objectReferneceFilter; }
+
 void ObjectManipulationManager::SetdoToggleWithToggleKey(bool value) {
     Input::doToggleWithToggleKey = value;
 }
@@ -316,7 +318,7 @@ void ObjectManipulationManager::Input::PassiveState::Pick(RE::ButtonEvent* butto
             return true;
         };
         if (auto ref = RayCast::GetObjectAtCursor(evaluator, 1000)) {
-            if (ObjectReferenceFilter::Match(ref)) {
+            if (Selection::objectReferneceFilter->Match(ref)) {
                 StartDraggingObject(ref);
             }
         }

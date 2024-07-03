@@ -5,9 +5,9 @@ namespace fs = std::filesystem;
 
 void OnMessage(SKSE::MessagingInterface::Message* message) {
     if (message->type == SKSE::MessagingInterface::kDataLoaded) {
-        ObjectReferenceFilter::Install(".\\Data\\Object Manipulation Overhaul", ".*_OMO\\.txt$");
+        ObjectReferenceFilterConfiguration::Install(".\\Data\\Object Manipulation Overhaul", ".*_OMO\\.txt$");
         ObjectManipulationManager::Install();
-        KeyConfiguration::Install(".\\Data\\Object Manipulation Overhaul\\KeyConfiguration.txt");
+        InputManagerConfiguration::Install(".\\Data\\Object Manipulation Overhaul\\KeyConfiguration.txt");
 
     }
     if (message->type == SKSE::MessagingInterface::kPreLoadGame) {

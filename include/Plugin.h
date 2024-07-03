@@ -1,9 +1,9 @@
 #pragma once
 #include "Lib/Logger.h"
-#include "Lib/File.h"
-#include "Lib/Regex.h"
 #include "Application/UI.h"
-#include "Application/KeyConfiguration.h"
+
+#include "Application/Configuration/InputManagerConfiguration.h"
+#include "Application/Configuration/ObjectReferenceFilterConfiguration.h"
+
 #include "Application/ObjectManipulationManager.h"
-#include "Application/ObjectReferenceFilterConfiguration.h"
 #include "Interface/Papyrus.h"

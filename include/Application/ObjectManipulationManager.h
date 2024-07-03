@@ -5,7 +5,7 @@
 #include "Lib/Raycast.h"
 #include "Lib/Misc.h"
 #include "Lib/InputManager.h"
-#include "Application/ObjectReferenceFilterConfiguration.h"
+#include "Lib/ObjectReferenceFilter.h"
 #define M_PI 3.14159265358979323846
 class ObjectManipulationManager {
 
@@ -20,6 +20,7 @@ class ObjectManipulationManager {
         static inline RE::NiPoint3 lastPosition;
         static inline RE::NiPoint3 lastAngle;
         static inline void UpdateObjectTransform(RE::NiPoint3& rayPosition);
+        static inline ObjectReferenceFilter* objectReferneceFilter = new ObjectReferenceFilter();
     };
 
     class State {
@@ -76,6 +77,7 @@ class ObjectManipulationManager {
     public:
     static InputManager* GetPassiveInputManager();
     static InputManager* GetActiveInputManager();
+    static ObjectReferenceFilter* GetRaycastReferenceFilter();
     static void SetdoToggleWithToggleKey(bool value);
     static void Clean();
     static void Install();

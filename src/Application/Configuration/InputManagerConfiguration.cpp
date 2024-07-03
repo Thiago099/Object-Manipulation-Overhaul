@@ -1,6 +1,6 @@
-#include "Application/KeyConfiguration.h"
+#include "Application/Configuration/InputManagerConfiguration.h"
 
-void KeyConfiguration::Install(std::string path) {
+void InputManagerConfiguration::Install(std::string path) {
 
     auto passiveInputManager = ObjectManipulationManager::GetPassiveInputManager();
     auto activeInputManager = ObjectManipulationManager::GetActiveInputManager();

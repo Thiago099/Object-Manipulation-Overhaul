@@ -3,8 +3,8 @@ set(HEADER_FILES
 	include/Plugin.h
 	include/Application/UI.h
 	include/Application/ObjectManipulationManager.h
-	include/Application/ObjectReferenceFilterConfiguration.h
-	include/Application/KeyConfiguration.h
+	include/Application/Configuration/ObjectReferenceFilterConfiguration.h
+	include/Application/Configuration/InputManagerConfiguration.h
 	include/Lib/logger.h
 	include/Lib/SKSEMenuFramework.h
 	include/Lib/HookBuilder.h
@@ -14,6 +14,7 @@ set(HEADER_FILES
 	include/Lib/File.h
 	include/Lib/Regex.h
 	include/Lib/InputManager.h
+	include/Lib/ObjectReferenceFilter.h
 	include/Interface/ObjectManipulationOverhaul.h
 	include/Interface/Papyrus.h
 )
