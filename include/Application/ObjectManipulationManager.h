@@ -6,7 +6,7 @@
 #include "Lib/Misc.h"
 #include "Lib/InputManager.h"
 #include "Lib/ObjectReferenceFilter.h"
-#define M_PI 3.14159265358979323846
+
 class ObjectManipulationManager {
 
     class Selection {
@@ -14,8 +14,8 @@ class ObjectManipulationManager {
         static inline RE::TESObjectREFR* object;
         static inline RE::COL_LAYER objectOriginalCollisionLayer;
 
-        static inline glm::vec2 rotateOffset = glm::vec2(0, 0);
-        static inline glm::vec2 moveOffset = glm::vec2(0, 0);
+        static inline glm::vec2 rotateOffset = glm::vec2(0.f, 0.f);
+        static inline glm::vec2 moveOffset = glm::vec2(0.f, 0.f);
 
         static inline RE::NiPoint3 lastPosition;
         static inline RE::NiPoint3 lastAngle;
@@ -41,7 +41,7 @@ class ObjectManipulationManager {
     class Input {
         public:
         struct ProcessInputQueueHook {
-            static void thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher, RE::InputEvent* const* a_event);
+                static void thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher, RE::InputEvent* const* a_event);
             static inline REL::Relocation<decltype(thunk)> originalFunction;
         };
         static inline bool doToggleWithToggleKey = false;
@@ -64,6 +64,7 @@ class ObjectManipulationManager {
             static void Commit(RE::ButtonEvent* button);
             static void ResetTransform(RE::ButtonEvent* button);
             static void AdvancedMode(RE::ButtonEvent* button);
+            static bool ProcessMouseMovement(RE::MouseMoveEvent* move);
         };
     };
 

@@ -1,11 +1,11 @@
 #pragma once
-#define M_PI 3.14159265358979323846
-
+#include <glm/ext.hpp>
+#include <glm/glm.hpp>
 namespace Misc {
     void SetPosition(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position);
     void SetAngle(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position);
     float DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b);
-    double NormalizeAngle(double angle_rad);
+    float NormalizeAngle(float angle_rad);
     RE::NiColorA CreateColor(uint32_t color);
     bool IsStatic(RE::COL_LAYER& col);
     RE::NiObject* GetPlayer3d();

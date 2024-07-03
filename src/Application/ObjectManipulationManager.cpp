@@ -1,9 +1,12 @@
 #include "Application/ObjectManipulationManager.h"
  void ObjectManipulationManager::Install() {
     auto builder = new HookBuilder();
+    
     builder->AddCall<Input::ProcessInputQueueHook, 5, 14>(67315, 0x7B, 68617, 0x7B, 0xC519E0, 0x81);
     builder->Install();
+    
     delete builder;
+
     State::stateColorMap[State::ValidState::Valid] = Misc::CreateColor(0x00CCFFaa);
     State::stateColorMap[State::ValidState::Error] = Misc::CreateColor(0xFF0000aa);
 
@@ -11,28 +14,25 @@
     Input::activeInputManager->AddSink("Cancel", Input::ActiveState::Cancel);
     Input::activeInputManager->AddSink("Commit", Input::ActiveState::Commit);
 
-
     Input::activeInputManager->AddSink("ToggleRotate", Input::ActiveState::ToggleRotate);
     Input::activeInputManager->AddSink("ToggleMove", Input::ActiveState::ToggleMove);
     Input::activeInputManager->AddSink("ResetTransform", Input::ActiveState::ResetTransform);
     Input::activeInputManager->AddSink("AdvancedMode", Input::ActiveState::AdvancedMode);
-
-
  }
 
-void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
-    if (refr) {
+void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* ref) {
+    if (ref) {
         CancelDrag();
-        Selection::lastPosition = refr->GetPosition();
-        Selection::lastAngle = refr->GetAngle();
+        Selection::lastPosition = ref->GetPosition();
+        Selection::lastAngle = ref->GetAngle();
         auto [cameraAngle, cameraPosition] = RayCast::GetCameraData();
-        auto angle = refr->GetAngle();
+        auto angle = ref->GetAngle();
         Selection::rotateOffset = glm::vec2(-angle.z + cameraAngle.z, 0);
         Selection::moveOffset = glm::vec2(0, 0);
         Input::isToggleMoveDown = false;
         Input::isToggleRotateDown = false;
         Input::IsAdvancedMode = false;
-        Selection::object = refr;
+        Selection::object = ref;
         State::validState = State::ValidState::None;
         State::dragState = State::DragState::Initializing;
     }
@@ -47,7 +47,6 @@ void ObjectManipulationManager::TryInitialize() {
         }
         State::dragState = State::DragState::Running;
     }
-
 }
 
 void ObjectManipulationManager::CancelDrag() {
@@ -123,23 +122,34 @@ void ObjectManipulationManager::Update() {
         if (mesh->GetUserData() == obj) {
             return false;
         }
+
         return true;
     };
 
-    auto rayPostion = RayCast::GetCursorPosition(evaluator);
+    auto ray = RayCast::Cast(evaluator);
 
     auto [cameraAngle, cameraPosition] = RayCast::GetCameraData();
 
-    Selection::UpdateObjectTransform(rayPostion);
+    Selection::UpdateObjectTransform(ray.position);
 
-    if (Misc::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
+    if (Misc::DistanceBetweenTwoPoints(cameraPosition, ray.position) < 1000) {
         SetPlacementState(State::ValidState::Valid);
     } else {
         SetPlacementState(State::ValidState::Error);
     }
 
-    // logger::info("Water: {}, name: {}", obj->IsInWater(),
-    //                  RE::TES::GetSingleton()->GetLandTexture(rayPostion)->materialType->materialName);
+    if (ray.object) {
+    } else {
+
+        if (auto texture = RE::TES::GetSingleton()->GetLandTexture(ray.position)) {
+            if (auto material = texture->materialType) {
+                logger::trace("ID: {}, Name: {}", material->materialID, material->materialName);
+            }
+            logger::info("IsInWater: {}",obj->IsInWater());
+        }
+
+    }
+
 }
 
 InputManager* ObjectManipulationManager::GetPassiveInputManager() { return Input::passiveInputManager; }
@@ -155,13 +165,16 @@ void ObjectManipulationManager::SetdoToggleWithToggleKey(bool value) {
 void ObjectManipulationManager::Clean() {
     State::dragState = State::DragState::Idle;
 }
-
+RE::NiPoint3 glmPointToSkyrim(glm::vec3 point) {
+    return {point.x,point.y, point.z};
+}
 inline void ObjectManipulationManager::Selection::UpdateObjectTransform(RE::NiPoint3& rayPosition) {
     auto obj = Selection::object;
     auto [cameraAngle, cameraPosition] = RayCast::GetCameraData();
 
     auto yoffset = Selection::rotateOffset.y;
     auto xoffset = Selection::rotateOffset.x;
+
 
     auto c = glm::rotate(glm::mat4(1.0f), -cameraAngle.z, glm::vec3(1.0f, 0.0f, 0.0f));
     auto b = glm::rotate(glm::mat4(1.0f), yoffset, glm::vec3(0.0f, 0.0f, 1.0f));
@@ -235,7 +248,6 @@ glm::vec3 extractEulerAngles(const glm::mat3& R) {
     return glm::vec3(yaw, pitch, roll);
 }
 
-
 void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
                                                              RE::InputEvent* const* a_event) {
 
@@ -255,21 +267,8 @@ void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEvent
 
             bool suppress = BlockActivateButton(current);
             if (auto move = current->AsMouseMoveEvent() ) {
-                if (Input::isToggleRotateDown) {
+                if (ActiveState::ProcessMouseMovement(move)) {
                     suppress = true;
-                    auto sensitivity = 0.005;
-                    Selection::rotateOffset.x += move->mouseInputX * sensitivity;
-                    if (Input::IsAdvancedMode) {
-                        Selection::rotateOffset.y += move->mouseInputY * sensitivity;
-                    }
-                }
-                else if (Input::isToggleMoveDown) {
-                    suppress = true;
-                    auto sensitivity = 0.1;
-                    if (Input::IsAdvancedMode) {
-                        Selection::moveOffset.x += move->mouseInputX * sensitivity;
-                    }
-                    Selection::moveOffset.y += move->mouseInputY * sensitivity;
                 }
             }
 
@@ -308,6 +307,33 @@ void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEvent
     }
 }
 
+bool ObjectManipulationManager::Input::ActiveState::ProcessMouseMovement(RE::MouseMoveEvent* move) {
+    if (Input::isToggleRotateDown) {
+        auto sensitivity = 0.005;
+        if (Input::IsAdvancedMode) {
+            Selection::rotateOffset.y += move->mouseInputY * sensitivity;
+        }
+
+        Selection::rotateOffset.y = Misc::NormalizeAngle(Selection::rotateOffset.y);
+
+        if (glm::abs(Selection::rotateOffset.y) > glm::half_pi<float>()) {
+            Selection::rotateOffset.x -= move->mouseInputX * sensitivity;
+        } else {
+            Selection::rotateOffset.x += move->mouseInputX * sensitivity;
+        }
+        Selection::rotateOffset.y = Misc::NormalizeAngle(Selection::rotateOffset.y);
+        return true;
+    } else if (Input::isToggleMoveDown) {
+        auto sensitivity = 0.1;
+        if (Input::IsAdvancedMode) {
+            Selection::moveOffset.x += move->mouseInputX * sensitivity;
+        }
+        Selection::moveOffset.y += move->mouseInputY * sensitivity;
+        return true;
+    }
+    return false;
+}
+
 void ObjectManipulationManager::Input::PassiveState::Pick(RE::ButtonEvent* button) {
     if (button->IsDown()) {
         auto player3d = Misc::GetPlayer3d();
@@ -317,9 +343,10 @@ void ObjectManipulationManager::Input::PassiveState::Pick(RE::ButtonEvent* butto
             }
             return true;
         };
-        if (auto ref = RayCast::GetObjectAtCursor(evaluator, 1000)) {
-            if (Selection::objectReferneceFilter->Match(ref)) {
-                StartDraggingObject(ref);
+        auto ray = RayCast::Cast(evaluator, 1000);
+        if (ray.object) {
+            if (Selection::objectReferneceFilter->Match(ray.object)) {
+                StartDraggingObject(ray.object);
             }
         }
     }

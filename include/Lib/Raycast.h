@@ -1,15 +1,21 @@
 #pragma once
-#define M_PI 3.14159265358979323846
 #include "Lib/RayCollector.h"
+struct RayCastResult;
 class RayCast {
-    public:
-    static RE::NiPoint3 QuaternionToEuler(const RE::NiQuaternion& q);
-    static std::pair<RE::NiPoint3, RE::NiPoint3> GetCameraData();
-    static RE::NiPoint3 GetCursorPosition(std::function<bool(RE::NiAVObject*)> const& evaluator);
-    static RE::TESObjectREFR* GetObjectAtCursor(std::function<bool(RE::NiAVObject*)> const& evaluator, float raySize);
-    static std::pair<RE::NiPoint3, RE::TESObjectREFR*> RaycastObjectRefr(
+        static std::pair<RE::NiPoint3, RE::TESObjectREFR*> CastRay(
         RE::Actor* caster, RE::NiPoint3 angle,
                                                                   RE::NiPoint3 position,
                                                                   std::function<bool(RE::NiAVObject*)> const& evaluator,
                                                                   float raySize);
+    public:
+        static RE::NiPoint3 QuaternionToEuler(const RE::NiQuaternion& q);
+        static std::pair<RE::NiPoint3, RE::NiPoint3> GetCameraData();
+        static RayCastResult Cast(std::function<bool(RE::NiAVObject*)> const& evaluator, float raySize = 2000000000.f);
+
+
+};
+
+struct RayCastResult {
+    RE::NiPoint3 position;
+    RE::TESObjectREFR* object;
 };

@@ -25,15 +25,10 @@ float Misc::DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b) {
     return std::sqrt(dx * dx + dy * dy + dz * dz);
 }
 
-double Misc::NormalizeAngle(double angle_rad) {
-    // Normalize angle to be within [0, 2*pi)
-    while (angle_rad < 0) {
-        angle_rad += 2 * M_PI;
-    }
-    while (angle_rad >= 2 * M_PI) {
-        angle_rad -= 2 * M_PI;
-    }
-    return angle_rad;
+float Misc::NormalizeAngle(float angle) {
+    angle = glm::mod(angle + glm::pi<float>(), glm::two_pi<float>());
+    if (angle < 0.0f) angle += glm::two_pi<float>();
+    return angle - glm::pi<float>();
 }
 
 RE::NiColorA Misc::CreateColor(uint32_t color) {

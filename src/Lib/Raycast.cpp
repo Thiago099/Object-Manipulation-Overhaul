@@ -32,7 +32,7 @@ RE::NiPoint3 RayCast::QuaternionToEuler(const RE::NiQuaternion& q) {
     // Pitch (y-axis rotation)
     double sinp = 2 * (q.w * q.y - q.z * q.x);
     if (std::abs(sinp) >= 1)
-        euler.y = std::copysign(M_PI / 2, sinp);
+        euler.y = std::copysign(glm::pi<float>() / 2, sinp);
     else
         euler.y = std::asin(sinp);
 
@@ -84,26 +84,16 @@ std::pair<RE::NiPoint3, RE::NiPoint3> RayCast::GetCameraData() {
     return std::pair(QuaternionToEuler(rotation), translation);
 }
 
-RE::NiPoint3 RayCast::GetCursorPosition(
-    std::function<bool(RE::NiAVObject*)> const& evaluator) {
+RayCastResult RayCast::Cast(std::function<bool(RE::NiAVObject*)> const& evaluator, float raySize) {
     auto player = RE::PlayerCharacter::GetSingleton();
 
-    auto [rotation, cameraPosition] = GetCameraData();
+    auto [camera_rotation, camera_position] = GetCameraData();
 
-    auto [pos, refr] = RaycastObjectRefr(player, rotation, cameraPosition, evaluator, 2000000000);
-
-    return pos;
-}
-RE::TESObjectREFR* RayCast::GetObjectAtCursor(std::function<bool(RE::NiAVObject*)> const& evaluator, float raySize) {
-    auto player = RE::PlayerCharacter::GetSingleton();
-
-    auto [rotation, pos] = GetCameraData();
-
-    auto [pos2, refr] = RaycastObjectRefr(player, rotation, pos, evaluator, raySize);
-    return refr;
+    auto [ray_position, ray_object] = CastRay(player, camera_rotation, camera_position, evaluator, raySize);
+    return RayCastResult(ray_position, ray_object);
 }
 
-std::pair<RE::NiPoint3, RE::TESObjectREFR*> RayCast::RaycastObjectRefr(
+std::pair<RE::NiPoint3, RE::TESObjectREFR*> RayCast::CastRay(
     RE::Actor* caster, RE::NiPoint3 angle, RE::NiPoint3 position,
     std::function<bool(RE::NiAVObject*)> const& evaluator, float raySize) {
     auto havokWorldScale = RE::bhkWorld::GetWorldScale();
