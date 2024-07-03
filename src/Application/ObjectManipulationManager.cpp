@@ -24,8 +24,9 @@ void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
         Selection::lastPosition = refr->GetPosition();
         Selection::lastAngle = refr->GetAngle();
         auto [cameraAngle, cameraPosition] = RayCast::GetCameraData();
-        Selection::rotateOffset = glm::uvec2(0, 0);
-        Selection::moveOffset = glm::uvec2(0, 0);
+        auto angle = refr->GetAngle();
+        Selection::rotateOffset = glm::vec2(-angle.z + cameraAngle.z, 0);
+        Selection::moveOffset = glm::vec2(0, 0);
         Input::isToggleMoveDown = false;
         Input::isToggleRotateDown = false;
         Selection::object = refr;
