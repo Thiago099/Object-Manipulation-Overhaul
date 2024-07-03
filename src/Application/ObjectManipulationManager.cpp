@@ -137,11 +137,11 @@ void ObjectManipulationManager::Update() {
 
     auto [angQ, camera_pos] = RayCast::GetCameraData();
 
-    auto a = glm::rotate(glm::mat4(1.0f), -angQ.z, glm::vec3(1.0f, 0.0f, 0.0f));
+    auto a = glm::rotate(glm::mat4(1.0f), Selection::offset.x, glm::vec3(1.0f, 0.0f, 0.0f));
     auto b = glm::rotate(glm::mat4(1.0f), Selection::offset.y, glm::vec3(0.0f, 0.0f, 1.0f));
-    auto c = glm::rotate(glm::mat4(1.0f), Selection::offset.x, glm::vec3(1.0f, 0.0f, 0.0f));
+    auto c = glm::rotate(glm::mat4(1.0f), -angQ.z, glm::vec3(1.0f, 0.0f, 0.0f));
 
-    auto rotationMatrix = c*b*a;
+    auto rotationMatrix = a*b*c;
 
     float newYaw = atan2(rotationMatrix[1][0], rotationMatrix[0][0]);
     float newPitch = asin(-rotationMatrix[2][0]);
