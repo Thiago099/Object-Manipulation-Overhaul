@@ -34,7 +34,8 @@ void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
         Selection::lastAngle = refr->GetAngle();
         auto [cameraAngle, cameraPosition] = RayCast::GetCameraData();
         Selection::positionOffset = RE::NiPoint3(0, 0, 0);
-        Selection::angleOffset = RE::NiPoint3(0, 0, 0);
+        Selection::offset = glm::uvec2(0, 0);
+        Selection::angleOffset = RE::NiPoint3(0, 0, refr->GetAngle().z + cameraAngle.z);
         Input::isToggleKeyDown = false;
         Selection::object = refr;
         State::validState = State::ValidState::None;
@@ -131,6 +132,24 @@ void ObjectManipulationManager::Update() {
     };
 
     auto [cameraPosition, rayPostion] = RayCast::GetCursorPosition(evaluator);
+
+
+
+    auto [angQ, camera_pos] = RayCast::GetCameraData();
+
+    auto a = glm::rotate(glm::mat4(1.0f), -angQ.z, glm::vec3(1.0f, 0.0f, 0.0f));
+    auto b = glm::rotate(glm::mat4(1.0f), Selection::offset.y, glm::vec3(0.0f, 0.0f, 1.0f));
+    auto c = glm::rotate(glm::mat4(1.0f), Selection::offset.x, glm::vec3(1.0f, 0.0f, 0.0f));
+
+    auto rotationMatrix = c*b*a;
+
+    float newYaw = atan2(rotationMatrix[1][0], rotationMatrix[0][0]);
+    float newPitch = asin(-rotationMatrix[2][0]);
+    float newRoll = atan2(rotationMatrix[2][1], rotationMatrix[2][2]);
+
+    Selection::angleOffset.x = newYaw;
+    Selection::angleOffset.y = newPitch;
+    Selection::angleOffset.z = newRoll;
 
 
     Misc::SetPosition(obj, rayPostion + Selection::positionOffset);
@@ -236,57 +255,10 @@ void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEvent
                 suppress = true;
                 auto sensitivity = 0.01;
 
-                float yaw = move->mouseInputX * sensitivity;
-                float pitch = move->mouseInputY * sensitivity;
-
-                auto [angQ, camera_pos] = RayCast::GetCameraData();
-                auto ang = RayCast::QuaternionToEuler(angQ);
-                //auto object_pos = Selection::object->GetPosition();
-                //auto az = -std::atan2(camera_pos.x - object_pos.x, camera_pos.y - object_pos.y);
-                //auto ay = -std::atan2(camera_pos.x - object_pos.x, camera_pos.z - object_pos.z);
-                //auto ax = std::atan2(camera_pos.z - object_pos.z, camera_pos.y - object_pos.y);
-
-                
-
-                //Selection::angleOffset.x += (- deltax * sin(az) + deltay * cos(az));
-                //Selection::angleOffset.y += (deltay * sin(az) + deltax * cos(az));
-
-                
+                Selection::offset.x += move->mouseInputX * sensitivity;
+                Selection::offset.y += move->mouseInputY * sensitivity;
 
 
-                auto x = Selection::angleOffset.x;
-                auto y = Selection::angleOffset.y;
-                auto z = Selection::angleOffset.z;
-
-                //Selection::angleOffset.x += (-deltax * sin(az) + deltay * cos(az));
-                //Selection::angleOffset.y += (deltay * sin(az) + deltax * cos(az));
-
-                glm::mat4 rotationMatrix = glm::mat4(1.0f);
-
-
-                rotationMatrix = glm::rotate(rotationMatrix,-x, glm::vec3(1.0f, 0.0f, 0.0f));
-                rotationMatrix = glm::rotate(rotationMatrix,-y, glm::vec3(0.0f, 1.0f, 0.0f));
-                rotationMatrix = glm::rotate(rotationMatrix,-x, glm::vec3(0.0f, 0.0f, 1.0f));
-
-                rotationMatrix = glm::rotate(rotationMatrix, yaw, glm::vec3(1.0f, 0.0f, 0.0f));
-                rotationMatrix = glm::rotate(rotationMatrix, pitch, glm::vec3(0.0f, 0.0f, 1.0f));
-
-                float newYaw = atan2(rotationMatrix[1][0], rotationMatrix[0][0]);
-                float newPitch = asin(-rotationMatrix[2][0]);
-                float newRoll = atan2(rotationMatrix[2][1], rotationMatrix[2][2]);
-
-                Selection::angleOffset.x = newYaw;
-                Selection::angleOffset.y = newPitch;
-                Selection::angleOffset.z = newRoll;
-
-                //logger::info("{}", deltax);
-
-                 //Selection::angleOffset.z -= deltax;
-                 //Selection::angleOffset.x += deltay * cos(az);
-                 //Selection::angleOffset.y += deltay * sin(az);
-
-
-                //logger::info("sin: {}, cos: {}", newYaw, newPitch);
             }
             }
 

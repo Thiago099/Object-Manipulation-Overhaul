@@ -17,6 +17,8 @@ class ObjectManipulationManager {
         static inline RE::NiPoint3 angleOffset;
         static inline RE::NiPoint3 positionOffset;
 
+        static inline glm::vec2 offset = glm::vec2(0, 0);
+
         static inline RE::NiPoint3 lastPosition;
         static inline RE::NiPoint3 lastAngle;
     };

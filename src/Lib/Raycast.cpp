@@ -62,7 +62,7 @@ RE::MagicTarget* FindPickTarget(RE::MagicCaster* caster, RE::NiPoint3& a_targetL
     return func(caster, a_targetLocation, a_targetCell, a_pickData);
 }
 
-std::pair<RE::NiQuaternion, RE::NiPoint3> RayCast::GetCameraData() {
+std::pair<RE::NiPoint3, RE::NiPoint3> RayCast::GetCameraData() {
     RE::PlayerCamera* camera = RE::PlayerCamera::GetSingleton();
     auto thirdPerson =
         reinterpret_cast<RE::ThirdPersonState*>(camera->cameraStates[RE::CameraState::kThirdPerson].get());
@@ -81,7 +81,7 @@ std::pair<RE::NiQuaternion, RE::NiPoint3> RayCast::GetCameraData() {
     } else {
         return {};
     }
-    return std::pair(rotation, translation);
+    return std::pair(QuaternionToEuler(rotation), translation);
 }
 
 std::pair<RE::NiPoint3, RE::NiPoint3> RayCast::GetCursorPosition(
@@ -104,14 +104,14 @@ RE::TESObjectREFR* RayCast::GetObjectAtCursor(std::function<bool(RE::NiAVObject*
 }
 
 std::pair<RE::NiPoint3, RE::TESObjectREFR*> RayCast::RaycastObjectRefr(
-    RE::Actor* caster, RE::NiQuaternion angle, RE::NiPoint3 position,
+    RE::Actor* caster, RE::NiPoint3 angle, RE::NiPoint3 position,
     std::function<bool(RE::NiAVObject*)> const& evaluator, float raySize) {
     auto havokWorldScale = RE::bhkWorld::GetWorldScale();
     RE::bhkPickData pick_data;
     RE::NiPoint3 ray_start, ray_end;
 
     ray_start = position;
-    ray_end = ray_start + rotate(raySize, QuaternionToEuler(angle));
+    ray_end = ray_start + rotate(raySize, angle);
     pick_data.rayInput.from = ray_start * havokWorldScale;
     pick_data.rayInput.to = ray_end * havokWorldScale;
 
