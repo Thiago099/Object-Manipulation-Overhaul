@@ -116,11 +116,11 @@ void ObjectManipulationManager::Update() {
 
     auto pick3d = Selection::object->Get3D();
 
-    const auto evaluator = [player3d, pick3d](RE::NiAVObject* obj) {
-        if (obj == player3d) {
+    const auto evaluator = [player3d, pick3d,obj](RE::NiAVObject* mesh) {
+        if (mesh == player3d) {
             return false;
         }
-        if (obj == pick3d) {
+        if (mesh->GetUserData() == obj) {
             return false;
         }
         return true;
@@ -130,27 +130,7 @@ void ObjectManipulationManager::Update() {
 
     auto [cameraAngle, cameraPosition] = RayCast::GetCameraData();
 
-    auto yoffset = Selection::rotateOffset.y;
-    auto xoffset = Selection::rotateOffset.x;
-
-    auto c = glm::rotate(glm::mat4(1.0f), -cameraAngle.z, glm::vec3(1.0f, 0.0f, 0.0f));
-    auto b = glm::rotate(glm::mat4(1.0f), yoffset, glm::vec3(0.0f, 0.0f, 1.0f));
-    auto a = glm::rotate(glm::mat4(1.0f), xoffset, glm::vec3(1.0f, 0.0f, 0.0f));
-
-    auto rotationMatrix = a * b * c;
-
-    float newYaw = atan2(rotationMatrix[1][0], rotationMatrix[0][0]);
-    float newPitch = asin(-rotationMatrix[2][0]);
-    float newRoll = atan2(rotationMatrix[2][1], rotationMatrix[2][2]);
-
-    float x = Selection::moveOffset.x * cos(-cameraAngle.z);
-    float y = Selection::moveOffset.x * sin(-cameraAngle.z);
-    float z = -Selection::moveOffset.y;
-
-    Misc::SetPosition(obj, rayPostion + RE::NiPoint3(x,y,z));
-    Misc::SetAngle(obj, RE::NiPoint3(newYaw, newPitch, newRoll));
-
-    obj->Update3DPosition(true);
+    Selection::UpdateObjectTransform(rayPostion);
 
     if (Misc::DistanceBetweenTwoPoints(cameraPosition, rayPostion) < 1000) {
         SetPlacementState(State::ValidState::Valid);
@@ -172,6 +152,33 @@ void ObjectManipulationManager::SetdoToggleWithToggleKey(bool value) {
 
 void ObjectManipulationManager::Clean() {
     State::dragState = State::DragState::Idle;
+}
+
+inline void ObjectManipulationManager::Selection::UpdateObjectTransform(RE::NiPoint3& rayPosition) {
+    auto obj = Selection::object;
+    auto [cameraAngle, cameraPosition] = RayCast::GetCameraData();
+
+    auto yoffset = Selection::rotateOffset.y;
+    auto xoffset = Selection::rotateOffset.x;
+
+    auto c = glm::rotate(glm::mat4(1.0f), -cameraAngle.z, glm::vec3(1.0f, 0.0f, 0.0f));
+    auto b = glm::rotate(glm::mat4(1.0f), yoffset, glm::vec3(0.0f, 0.0f, 1.0f));
+    auto a = glm::rotate(glm::mat4(1.0f), xoffset, glm::vec3(1.0f, 0.0f, 0.0f));
+
+    auto rotationMatrix = a * b * c;
+
+    float newYaw = atan2(rotationMatrix[1][0], rotationMatrix[0][0]);
+    float newPitch = asin(-rotationMatrix[2][0]);
+    float newRoll = atan2(rotationMatrix[2][1], rotationMatrix[2][2]);
+
+    float x = Selection::moveOffset.x * cos(-cameraAngle.z);
+    float y = Selection::moveOffset.x * sin(-cameraAngle.z);
+    float z = -Selection::moveOffset.y;
+
+    Misc::SetPosition(obj, rayPosition + RE::NiPoint3(x, y, z));
+    Misc::SetAngle(obj, RE::NiPoint3(newYaw, newPitch, newRoll));
+
+    obj->Update3DPosition(true);
 }
 
 void ObjectManipulationManager::SetPlacementState(State::ValidState id) {

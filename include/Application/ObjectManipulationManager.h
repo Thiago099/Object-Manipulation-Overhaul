@@ -19,6 +19,7 @@ class ObjectManipulationManager {
 
         static inline RE::NiPoint3 lastPosition;
         static inline RE::NiPoint3 lastAngle;
+        static inline void UpdateObjectTransform(RE::NiPoint3& rayPosition);
     };
 
     class State {
