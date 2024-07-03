@@ -8,21 +8,12 @@
     State::stateColorMap[State::ValidState::Error] = Misc::CreateColor(0xFF0000aa);
 
     Input::passiveInputManager->AddSink("Pick", Input::PassiveState::Pick);
-    Input::activeInputManager->AddSink("ToggleMoveRotate", Input::ActiveState::ToggleMoveRotate);
-    Input::activeInputManager->AddSink("TranslateLeft", Input::ActiveState::TranslateLeft);
-    Input::activeInputManager->AddSink("TranslateRight", Input::ActiveState::TranslateRight);
-    Input::activeInputManager->AddSink("MoveUp", Input::ActiveState::MoveUp);
-    Input::activeInputManager->AddSink("MoveDown", Input::ActiveState::MoveDown);
     Input::activeInputManager->AddSink("Cancel", Input::ActiveState::Cancel);
     Input::activeInputManager->AddSink("Commit", Input::ActiveState::Commit);
 
 
-    Input::activeInputManager->AddSink("ZRotationPlus", Input::ActiveState::ZRotationPlus);
-    Input::activeInputManager->AddSink("ZRotationMinus", Input::ActiveState::ZRotationMinus);
-    Input::activeInputManager->AddSink("XRotationPlus", Input::ActiveState::XRotationPlus);
-    Input::activeInputManager->AddSink("XRotationMinus", Input::ActiveState::XRotationMinus);
-    Input::activeInputManager->AddSink("YRotationPlus", Input::ActiveState::YRotationPlus);
-    Input::activeInputManager->AddSink("YRotationMinus", Input::ActiveState::YRotationMinus);
+    Input::activeInputManager->AddSink("ToggleRotate", Input::ActiveState::ToggleRotate);
+    Input::activeInputManager->AddSink("ToggleMove", Input::ActiveState::ToggleMove);
 
 
  }
@@ -33,10 +24,10 @@ void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
         Selection::lastPosition = refr->GetPosition();
         Selection::lastAngle = refr->GetAngle();
         auto [cameraAngle, cameraPosition] = RayCast::GetCameraData();
-        Selection::positionOffset = RE::NiPoint3(0, 0, 0);
-        Selection::offset = glm::uvec2(0, 0);
-        Selection::angleOffset = RE::NiPoint3(0, 0, refr->GetAngle().z + cameraAngle.z);
-        Input::isToggleKeyDown = false;
+        Selection::rotateOffset = glm::uvec2(0, 0);
+        Selection::moveOffset = glm::uvec2(0, 0);
+        Input::isToggleMoveDown = false;
+        Input::isToggleRotateDown = false;
         Selection::object = refr;
         State::validState = State::ValidState::None;
         State::dragState = State::DragState::Initializing;
@@ -133,27 +124,25 @@ void ObjectManipulationManager::Update() {
 
     auto [cameraPosition, rayPostion] = RayCast::GetCursorPosition(evaluator);
 
-
-
     auto [angQ, camera_pos] = RayCast::GetCameraData();
 
-    auto a = glm::rotate(glm::mat4(1.0f), Selection::offset.x, glm::vec3(1.0f, 0.0f, 0.0f));
-    auto b = glm::rotate(glm::mat4(1.0f), Selection::offset.y, glm::vec3(0.0f, 0.0f, 1.0f));
+    auto a = glm::rotate(glm::mat4(1.0f), Selection::rotateOffset.x, glm::vec3(1.0f, 0.0f, 0.0f));
+    auto b = glm::rotate(glm::mat4(1.0f), Selection::rotateOffset.y, glm::vec3(0.0f, 0.0f, 1.0f));
     auto c = glm::rotate(glm::mat4(1.0f), -angQ.z, glm::vec3(1.0f, 0.0f, 0.0f));
 
-    auto rotationMatrix = a*b*c;
+    auto rotationMatrix = a * b * c;
 
     float newYaw = atan2(rotationMatrix[1][0], rotationMatrix[0][0]);
     float newPitch = asin(-rotationMatrix[2][0]);
     float newRoll = atan2(rotationMatrix[2][1], rotationMatrix[2][2]);
 
-    Selection::angleOffset.x = newYaw;
-    Selection::angleOffset.y = newPitch;
-    Selection::angleOffset.z = newRoll;
+    float x = Selection::moveOffset.x * cos(-angQ.z);
+    float y = Selection::moveOffset.x * sin(-angQ.z);
+    float z = -Selection::moveOffset.y;
 
 
-    Misc::SetPosition(obj, rayPostion + Selection::positionOffset);
-    Misc::SetAngle(obj,Selection::angleOffset);
+    Misc::SetPosition(obj, rayPostion + RE::NiPoint3(x,y,z));
+    Misc::SetAngle(obj, RE::NiPoint3(newYaw, newPitch, newRoll));
 
     obj->Update3DPosition(true);
 
@@ -250,16 +239,19 @@ void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEvent
         for (auto current = *a_event; current; current = current->next) {
 
             bool suppress = BlockActivateButton(current);
-            if (Input::isToggleKeyDown) {
             if (auto move = current->AsMouseMoveEvent() ) {
-                suppress = true;
-                auto sensitivity = 0.01;
-
-                Selection::offset.x += move->mouseInputX * sensitivity;
-                Selection::offset.y += move->mouseInputY * sensitivity;
-
-
-            }
+                if (Input::isToggleRotateDown) {
+                    suppress = true;
+                    auto sensitivity = 0.005;
+                    Selection::rotateOffset.x += move->mouseInputX * sensitivity;
+                    Selection::rotateOffset.y += move->mouseInputY * sensitivity;
+                }
+                else if (Input::isToggleMoveDown) {
+                    suppress = true;
+                    auto sensitivity = 0.1;
+                    Selection::moveOffset.x += move->mouseInputX * sensitivity;
+                    Selection::moveOffset.y += move->mouseInputY * sensitivity;
+                }
             }
 
             if (auto button = current->AsButtonEvent()) {
@@ -315,34 +307,19 @@ void ObjectManipulationManager::Input::PassiveState::Pick(RE::ButtonEvent* butto
 }
 
 
-void ObjectManipulationManager::Input::ActiveState::ToggleMoveRotate(RE::ButtonEvent* button) {
+void ObjectManipulationManager::Input::ActiveState::ToggleMove(RE::ButtonEvent* button) {
     if (button->IsDown()) {
-        Input::isToggleKeyDown = true;
+        Input::isToggleMoveDown = true;
     } else if (button->IsUp()) {
-        Input::isToggleKeyDown = false;
+        Input::isToggleMoveDown = false;
     }
 }
-
-void ObjectManipulationManager::Input::ActiveState::TranslateLeft(RE::ButtonEvent* button) {
-    if (!Input::doToggleWithToggleKey || !Input::isToggleKeyDown) {
+void ObjectManipulationManager::Input::ActiveState::ToggleRotate(RE::ButtonEvent* button) {
+    if (button->IsDown()) {
+        Input::isToggleRotateDown = true;
+    } else if (button->IsUp()) {
+        Input::isToggleRotateDown = false;
     }
-}
-
-void ObjectManipulationManager::Input::ActiveState::TranslateRight(RE::ButtonEvent* button) {
-    if (!Input::doToggleWithToggleKey || !Input::isToggleKeyDown) {
-    }
-}
-
-void ObjectManipulationManager::Input::ActiveState::MoveUp(RE::ButtonEvent* button) {
-    if (!Input::doToggleWithToggleKey || Input::isToggleKeyDown) {
-        Selection::positionOffset.z += 1.f;
-    }
-}
-
-void ObjectManipulationManager::Input::ActiveState::MoveDown(RE::ButtonEvent* button) {
-    if (!Input::doToggleWithToggleKey || Input::isToggleKeyDown) {
-        Selection::positionOffset.z -= 1.f;
-    } 
 }
 
 void ObjectManipulationManager::Input::ActiveState::Cancel(RE::ButtonEvent* button) {
@@ -359,27 +336,4 @@ void ObjectManipulationManager::Input::ActiveState::Commit(RE::ButtonEvent* butt
     }
 }
 
-
-void ObjectManipulationManager::Input::ActiveState::ZRotationPlus(RE::ButtonEvent* button) {
-    Selection::angleOffset.x += 0.01;
-}
-
-void ObjectManipulationManager::Input::ActiveState::ZRotationMinus(RE::ButtonEvent* button) {
-
-}
-
-void ObjectManipulationManager::Input::ActiveState::XRotationPlus(RE::ButtonEvent* button) {
-    Selection::angleOffset.y += 0.01;
-}
-
-void ObjectManipulationManager::Input::ActiveState::XRotationMinus(RE::ButtonEvent* button) {
-
-}
-void ObjectManipulationManager::Input::ActiveState::YRotationPlus(RE::ButtonEvent* button) {
-
-}
-
-void ObjectManipulationManager::Input::ActiveState::YRotationMinus(RE::ButtonEvent* button) {
-
-}
 

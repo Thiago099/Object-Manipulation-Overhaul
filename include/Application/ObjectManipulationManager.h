@@ -14,10 +14,8 @@ class ObjectManipulationManager {
         static inline RE::TESObjectREFR* object;
         static inline RE::COL_LAYER objectOriginalCollisionLayer;
 
-        static inline RE::NiPoint3 angleOffset;
-        static inline RE::NiPoint3 positionOffset;
-
-        static inline glm::vec2 offset = glm::vec2(0, 0);
+        static inline glm::vec2 rotateOffset = glm::vec2(0, 0);
+        static inline glm::vec2 moveOffset = glm::vec2(0, 0);
 
         static inline RE::NiPoint3 lastPosition;
         static inline RE::NiPoint3 lastAngle;
@@ -45,7 +43,8 @@ class ObjectManipulationManager {
             static inline REL::Relocation<decltype(thunk)> originalFunction;
         };
         static inline bool doToggleWithToggleKey = false;
-        static inline bool isToggleKeyDown = false;
+        static inline bool isToggleRotateDown = false;
+        static inline bool isToggleMoveDown = false;
         static inline InputManager* passiveInputManager = new InputManager();
         static inline InputManager* activeInputManager = new InputManager();
 
@@ -56,19 +55,10 @@ class ObjectManipulationManager {
         class ActiveState {
             public:
             static inline bool blockState = false;
-            static void ToggleMoveRotate(RE::ButtonEvent* button);
-            static void TranslateLeft(RE::ButtonEvent* button);
-            static void TranslateRight(RE::ButtonEvent* button);
-            static void MoveUp(RE::ButtonEvent* button);
-            static void MoveDown(RE::ButtonEvent* button);
+            static void ToggleRotate(RE::ButtonEvent* button);
+            static void ToggleMove(RE::ButtonEvent* button);
             static void Cancel(RE::ButtonEvent* button);
             static void Commit(RE::ButtonEvent* button);
-            static void ZRotationPlus(RE::ButtonEvent* button);
-            static void ZRotationMinus(RE::ButtonEvent* button);
-            static void XRotationPlus(RE::ButtonEvent* button);
-            static void XRotationMinus(RE::ButtonEvent* button);
-            static void YRotationPlus(RE::ButtonEvent* button);
-            static void YRotationMinus(RE::ButtonEvent* button);
         };
     };
 
