@@ -7,4 +7,5 @@
  ToggleRotate,	    Keyboard,		LeftControl
  ToggleMove,	    Keyboard,		RightShift
  ToggleMove,	    Keyboard,		LeftShift
- ResetTransform,	Keyboard,		Spacebar
+ AdvancedMode,	    Keyboard,		Spacebar
+ ResetTransform,	Keyboard,		Tab

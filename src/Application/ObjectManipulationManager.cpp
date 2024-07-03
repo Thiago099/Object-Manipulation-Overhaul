@@ -15,6 +15,7 @@
     Input::activeInputManager->AddSink("ToggleRotate", Input::ActiveState::ToggleRotate);
     Input::activeInputManager->AddSink("ToggleMove", Input::ActiveState::ToggleMove);
     Input::activeInputManager->AddSink("ResetTransform", Input::ActiveState::ResetTransform);
+    Input::activeInputManager->AddSink("AdvancedMode", Input::ActiveState::AdvancedMode);
 
 
  }
@@ -30,6 +31,7 @@ void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* refr) {
         Selection::moveOffset = glm::vec2(0, 0);
         Input::isToggleMoveDown = false;
         Input::isToggleRotateDown = false;
+        Input::IsAdvancedMode = false;
         Selection::object = refr;
         State::validState = State::ValidState::None;
         State::dragState = State::DragState::Initializing;
@@ -124,13 +126,16 @@ void ObjectManipulationManager::Update() {
         return true;
     };
 
-    auto [cameraPosition, rayPostion] = RayCast::GetCursorPosition(evaluator);
+    auto rayPostion = RayCast::GetCursorPosition(evaluator);
 
-    auto [angQ, camera_pos] = RayCast::GetCameraData();
+    auto [cameraAngle, cameraPosition] = RayCast::GetCameraData();
 
-    auto a = glm::rotate(glm::mat4(1.0f), Selection::rotateOffset.x, glm::vec3(1.0f, 0.0f, 0.0f));
-    auto b = glm::rotate(glm::mat4(1.0f), Selection::rotateOffset.y, glm::vec3(0.0f, 0.0f, 1.0f));
-    auto c = glm::rotate(glm::mat4(1.0f), -angQ.z, glm::vec3(1.0f, 0.0f, 0.0f));
+    auto yoffset = Selection::rotateOffset.y;
+    auto xoffset = Selection::rotateOffset.x;
+
+    auto c = glm::rotate(glm::mat4(1.0f), -cameraAngle.z, glm::vec3(1.0f, 0.0f, 0.0f));
+    auto b = glm::rotate(glm::mat4(1.0f), yoffset, glm::vec3(0.0f, 0.0f, 1.0f));
+    auto a = glm::rotate(glm::mat4(1.0f), xoffset, glm::vec3(1.0f, 0.0f, 0.0f));
 
     auto rotationMatrix = a * b * c;
 
@@ -138,10 +143,9 @@ void ObjectManipulationManager::Update() {
     float newPitch = asin(-rotationMatrix[2][0]);
     float newRoll = atan2(rotationMatrix[2][1], rotationMatrix[2][2]);
 
-    float x = Selection::moveOffset.x * cos(-angQ.z);
-    float y = Selection::moveOffset.x * sin(-angQ.z);
+    float x = Selection::moveOffset.x * cos(-cameraAngle.z);
+    float y = Selection::moveOffset.x * sin(-cameraAngle.z);
     float z = -Selection::moveOffset.y;
-
 
     Misc::SetPosition(obj, rayPostion + RE::NiPoint3(x,y,z));
     Misc::SetAngle(obj, RE::NiPoint3(newYaw, newPitch, newRoll));
@@ -246,12 +250,16 @@ void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEvent
                     suppress = true;
                     auto sensitivity = 0.005;
                     Selection::rotateOffset.x += move->mouseInputX * sensitivity;
-                    Selection::rotateOffset.y += move->mouseInputY * sensitivity;
+                    if (Input::IsAdvancedMode) {
+                        Selection::rotateOffset.y += move->mouseInputY * sensitivity;
+                    }
                 }
                 else if (Input::isToggleMoveDown) {
                     suppress = true;
                     auto sensitivity = 0.1;
-                    Selection::moveOffset.x += move->mouseInputX * sensitivity;
+                    if (Input::IsAdvancedMode) {
+                        Selection::moveOffset.x += move->mouseInputX * sensitivity;
+                    }
                     Selection::moveOffset.y += move->mouseInputY * sensitivity;
                 }
             }
@@ -342,11 +350,22 @@ void ObjectManipulationManager::Input::ActiveState::ResetTransform(RE::ButtonEve
         if (Input::isToggleMoveDown) {
             Selection::moveOffset = glm::vec2(0, 0);
         }
-        if (Input::isToggleRotateDown) {
+        else if (Input::isToggleRotateDown) {
+            Selection::rotateOffset = glm::vec2(0, 0);
+        } else
+        {
+            Selection::moveOffset = glm::vec2(0, 0);
             Selection::rotateOffset = glm::vec2(0, 0);
         }
     }
 }
+
+void ObjectManipulationManager::Input::ActiveState::AdvancedMode(RE::ButtonEvent* button) {
+    if (button->IsDown()) {
+        Input::IsAdvancedMode = !IsAdvancedMode;
+    } 
+}
+
 
 
 

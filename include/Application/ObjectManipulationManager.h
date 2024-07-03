@@ -45,6 +45,7 @@ class ObjectManipulationManager {
         static inline bool doToggleWithToggleKey = false;
         static inline bool isToggleRotateDown = false;
         static inline bool isToggleMoveDown = false;
+        static inline bool IsAdvancedMode = false;
         static inline InputManager* passiveInputManager = new InputManager();
         static inline InputManager* activeInputManager = new InputManager();
 
@@ -60,6 +61,7 @@ class ObjectManipulationManager {
             static void Cancel(RE::ButtonEvent* button);
             static void Commit(RE::ButtonEvent* button);
             static void ResetTransform(RE::ButtonEvent* button);
+            static void AdvancedMode(RE::ButtonEvent* button);
         };
     };
 

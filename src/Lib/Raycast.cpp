@@ -84,15 +84,15 @@ std::pair<RE::NiPoint3, RE::NiPoint3> RayCast::GetCameraData() {
     return std::pair(QuaternionToEuler(rotation), translation);
 }
 
-std::pair<RE::NiPoint3, RE::NiPoint3> RayCast::GetCursorPosition(
+RE::NiPoint3 RayCast::GetCursorPosition(
     std::function<bool(RE::NiAVObject*)> const& evaluator) {
     auto player = RE::PlayerCharacter::GetSingleton();
 
-    auto [rotation, pos] = GetCameraData();
+    auto [rotation, cameraPosition] = GetCameraData();
 
-    auto [pos2, refr] = RaycastObjectRefr(player, rotation, pos, evaluator, 2000000000);
+    auto [pos, refr] = RaycastObjectRefr(player, rotation, cameraPosition, evaluator, 2000000000);
 
-    return std::pair<RE::NiPoint3, RE::NiPoint3>(pos, pos2);
+    return pos;
 }
 RE::TESObjectREFR* RayCast::GetObjectAtCursor(std::function<bool(RE::NiAVObject*)> const& evaluator, float raySize) {
     auto player = RE::PlayerCharacter::GetSingleton();
