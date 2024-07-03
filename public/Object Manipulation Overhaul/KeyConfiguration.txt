@@ -1,17 +1,10 @@
 # Action,			Device,			Key,
-
  Pick,				Mouse,			MiddleButton
+ Cancel,			Mouse,			RightButton
+ Commit,			Mouse,			LeftButton
+
  ToggleRotate,	    Keyboard,		RightControl
  ToggleRotate,	    Keyboard,		LeftControl
  ToggleMove,	    Keyboard,		RightShift
  ToggleMove,	    Keyboard,		LeftShift
- TranslateLeft,		Mouse,			WheelUp
- TranslateRight,	Mouse,			WheelDown
- MoveUp,			Mouse,			WheelUp
- MoveDown,			Mouse,			WheelDown
- Cancel,			Mouse,			RightButton
- Commit,			Mouse,			LeftButton
- ZRotationPlus,     Keyboard,       i
- XRotationPlus,     Keyboard,       o
- ZRotationMinus,    Keyboard,       k
- XRotationMinus,    Keyboard,       l
+ ResetTransform,	Keyboard,		Spacebar

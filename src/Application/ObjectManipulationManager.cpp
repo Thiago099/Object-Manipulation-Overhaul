@@ -14,6 +14,7 @@
 
     Input::activeInputManager->AddSink("ToggleRotate", Input::ActiveState::ToggleRotate);
     Input::activeInputManager->AddSink("ToggleMove", Input::ActiveState::ToggleMove);
+    Input::activeInputManager->AddSink("ResetTransform", Input::ActiveState::ResetTransform);
 
 
  }
@@ -336,5 +337,16 @@ void ObjectManipulationManager::Input::ActiveState::Commit(RE::ButtonEvent* butt
         }
     }
 }
+void ObjectManipulationManager::Input::ActiveState::ResetTransform(RE::ButtonEvent* button) {
+    if (button->IsDown()) {
+        if (Input::isToggleMoveDown) {
+            Selection::moveOffset = glm::vec2(0, 0);
+        }
+        if (Input::isToggleRotateDown) {
+            Selection::rotateOffset = glm::vec2(0, 0);
+        }
+    }
+}
+
 
 

@@ -59,6 +59,7 @@ class ObjectManipulationManager {
             static void ToggleMove(RE::ButtonEvent* button);
             static void Cancel(RE::ButtonEvent* button);
             static void Commit(RE::ButtonEvent* button);
+            static void ResetTransform(RE::ButtonEvent* button);
         };
     };
 
