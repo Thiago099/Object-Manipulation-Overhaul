@@ -15,6 +15,7 @@ set(HEADER_FILES
 	include/Lib/Regex.h
 	include/Lib/InputManager.h
 	include/Lib/ObjectReferenceFilter.h
+	include/Lib/Json.h
 	include/Interface/ObjectManipulationOverhaul.h
 	include/Interface/Papyrus.h
 )

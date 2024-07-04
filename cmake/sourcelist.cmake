@@ -11,6 +11,7 @@ set(SOURCE_FILES
 	src/Lib/Regex.cpp
 	src/Lib/InputManager.cpp
 	src/Lib/ObjectReferenceFilter.cpp
+	src/Lib/Json.cpp
 	src/Interface/ObjectManipulationOverhaul.cpp
 	src/Interface/Papyrus.cpp
 )

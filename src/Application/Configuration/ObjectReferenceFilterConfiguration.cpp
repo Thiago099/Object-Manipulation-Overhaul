@@ -9,9 +9,18 @@ ObjectReferenceFilter& ObjectReferenceFilterConfiguration::Install(std::string p
     auto filter = ObjectManipulationManager::GetRaycastReferenceFilter();
     for (auto& fileName : File::Lookup(path, regex)) {
         logger::info("Loading config file: {}", fileName);
-        for (auto& line : File::ReadAllLines(fileName)) {
-            ProcessFilterItem(line, items);
+        auto json = Json::ArrayFromFile(fileName);
+        if (json.HasObject(0)) {
+            auto obj = json.GetObject(0);
+            if (obj.HasString("action")) {
+                auto action = obj.GetString("action");
+                logger::info("Action: {}", action);
+            }
         }
+
+        //for (auto& line : File::ReadAllLines(fileName)) {
+        //    ProcessFilterItem(line, items);
+        //}
     }
     std::sort(items.begin(), items.end(), [](Item& a, Item& b) { 
         return a.priority < b.priority;
@@ -44,6 +53,20 @@ void ObjectReferenceFilterConfiguration::ProcessFilterItem(std::string& line, st
                         props.push_back(item[1]);
                     }
                 }
+                auto filter = itemGroups[4];
+
+                if (filter.size() > 0) {
+                    auto filters = parametersRegex.MatchAll(itemGroups[4]);
+                    if (filters.size() > 0) {
+                        for (auto& filterMatch : filters) {
+                            auto filter = filterMatch[1];
+                            logger::trace("filter: {}", filter);
+                        }
+                    }
+                }
+
+
+
                 items.push_back(Item(priority, add, name, props));
             } else {
                 logger::info("Expecting priority to be a number, got: {}", parameters[0][1]);

@@ -1,0 +1,43 @@
+[
+    {
+      "Action": "add",
+      "Priority": 0,
+      "Target": "All"
+    },
+    {
+      "Action": "remove",
+      "Priority": 100,
+      "Target": "FormType",
+      "Value": "NPC"
+    },
+    {
+      "Action": "remove",
+      "Priority": 100,
+      "Target": "FormType",
+      "Value": "Door"
+    },
+    {
+      "Action": "remove",
+      "Priority": 100,
+      "Target": "FormType",
+      "Value": "MovableStatic"
+    },
+    {
+      "Action": "remove",
+      "Priority": 100,
+      "Target": "FormType",
+      "Value": "Flora"
+    },
+    {
+      "Action": "remove",
+      "Priority": 100,
+      "Target": "FormType",
+      "Value": "Tree"
+    },
+    {
+      "Action": "remove",
+      "Priority": 100,
+      "Target": "FormType",
+      "Value": "Static"
+    }
+  ]
