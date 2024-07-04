@@ -5,7 +5,7 @@
 using JObject = nlohmann::json; 
 
 
-namespace Json {
+namespace JSON {
 
     class Object;
     class Array;
@@ -18,43 +18,46 @@ namespace Json {
 
     class Object {
         JObject obj;    
-        JObject getCaseInsensitive(const std::string& key);
+        JObject contextItem;
+        bool Contains(std::string& key);
+        JObject GetLast();
+
     public:
             Object(JObject obj) :obj(obj){
             }
-        bool HasFloat(std::string key);
-            bool HasBool(std::string key);
-            bool HasInt(std::string key);
-            bool HasString(std::string key);
-            bool HasArray(std::string key);
-            bool HasObject(std::string key);
-            float GetFloat(std::string key);
-            bool GetBool(std::string key);
-            int GetInt(std::string key);
-            std::string GetString(std::string key);
-            Object GetObject(std::string key);
-            Array GetArray(std::string key);
+            bool HasFloat(std::string key);
+            bool FetchBool(std::string key);
+            bool FetchInt(std::string key);
+            bool FetchString(std::string key);
+            bool FetchArray(std::string key);
+            bool FetchObject(std::string key);
+            float GetFloat();
+            bool GetBool();
+            int GetInt();
+            std::string GetString();
+            Object GetObject();
+            Array GetArray();
     };
     class Array{
             JObject obj;        
-            bool HasKey(size_t key) {
-                return (key >= 0) && (key < obj.size());
-            }
+            JObject contextItem;
+            JObject GetLast();
+            bool Contains(size_t key);
         public:
             Array(JObject obj) : obj(obj) {
             }
-            bool HasFloat(size_t key);
-            bool HasBool(size_t key);
-            bool HasInt(size_t key);
-            bool HasString(size_t key);
-            bool HasArray(size_t key);
-            bool HasObject(size_t key);
-            float GetFloat(size_t key);
-            bool GetBool(size_t key);
-            int GetInt(size_t key);
-            std::string GetString(size_t key);
-            Object GetObject(size_t key);
-            Array GetArray(size_t key);
+            bool FetchFloat(size_t key);
+            bool FetchBool(size_t key);
+            bool FetchInt(size_t key);
+            bool FetchString(size_t key);
+            bool FetchArray(size_t key);
+            bool FetchObject(size_t key);
+            float GetFloat();
+            bool GetBool();
+            int GetInt();
+            std::string GetString();
+            Object GetObject();
+            Array GetArray();
     };
 }
 

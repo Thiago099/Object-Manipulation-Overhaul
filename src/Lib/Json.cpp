@@ -1,6 +1,22 @@
 #include "Lib/Json.h"
 
 
+bool equals(const std::string& a, const std::string& b) {
+    return std::equal(a.begin(), a.end(), b.begin(), [](char a, char b) { return std::toupper(a) == std::toupper(b); });
+}
+bool JSON::Object::Contains(std::string& key) {
+    for (const auto item : obj.items()) {
+        if (equals(item.key(), key)) {
+            contextItem = item.value();
+            return true;
+        }
+    }
+    return false;
+}
+JObject JSON::Object::GetLast() {
+   return contextItem;
+}
+
 bool ReadFile(JObject & obj, std::string path) {
     std::ifstream i(path);
     if (i.is_open()) {
@@ -15,7 +31,7 @@ JObject ReadText(std::string data) {
     return JObject::parse(data);
 }
 
-Json::Object Json::ObjectFromFile(std::string path) {
+JSON::Object JSON::ObjectFromFile(std::string path) {
     JObject j;
     if (ReadFile(j, path)) {
         if (j.is_object()) {
@@ -24,10 +40,10 @@ Json::Object Json::ObjectFromFile(std::string path) {
     }
     return Object(JObject::parse("{}"));
 }
-Json::Object Json::ObjectFromString(std::string data) {
+JSON::Object JSON::ObjectFromString(std::string data) {
     return Object(ReadText(data));
 }
-Json::Array Json::ArrayFromFile(std::string path) {
+JSON::Array JSON::ArrayFromFile(std::string path) {
     JObject j;
     if (ReadFile(j, path)) {
         if (j.is_array()) {
@@ -36,113 +52,123 @@ Json::Array Json::ArrayFromFile(std::string path) {
     }
     return Array(JObject::parse("[]"));
 }
-Json::Array Json::ArrayFromText(std::string data) {
+JSON::Array JSON::ArrayFromText(std::string data) {
     return Array(ReadText(data)); }
 
-bool Json::Object::HasFloat(std::string key) {
-    if (!obj.contains(key)) {
+bool JSON::Object::HasFloat(std::string key) {
+    if (!Contains(key)) {
         return false;
     }
-    return obj[key].is_number_float();
+    return GetLast().is_number_float();
 }
 
-bool Json::Object::HasBool(std::string key) {
-    if (!obj.contains(key)) {
+bool JSON::Object::FetchBool(std::string key) {
+    if (!Contains(key)) {
         return false;
     }
-    return obj[key].is_boolean();
+    return GetLast().is_boolean();
 }
 
-bool Json::Object::HasInt(std::string key) {
-    if (!obj.contains(key)) {
+bool JSON::Object::FetchInt(std::string key) {
+    if (!Contains(key)) {
         return false;
     }
-    return obj[key].is_boolean();
+    return GetLast().is_boolean();
 }
 
-bool Json::Object::HasString(std::string key) {
-    if (!obj.contains(key)) {
+bool JSON::Object::FetchString(std::string key) {
+    if (!Contains(key)) {
         return false;
     }
-    return obj[key].is_string();
+    return GetLast().is_string();
 }
 
-bool Json::Object::HasArray(std::string key) {
-    if (!obj.contains(key)) {
+bool JSON::Object::FetchArray(std::string key) {
+    if (!Contains(key)) {
         return false;
     }
-    return obj[key].is_array();
+    return GetLast().is_array();
 }
 
-bool Json::Object::HasObject(std::string key) {
-    if (!obj.contains(key)) {
+bool JSON::Object::FetchObject(std::string key) {
+    if (!Contains(key)) {
         return false;
     }
-    return obj[key].is_object();
+    return GetLast().is_object();
 }
 
-float Json::Object::GetFloat(std::string key) { return obj[key]; }
+float JSON::Object::GetFloat() { return GetLast(); }
 
-bool Json::Object::GetBool(std::string key) { return obj[key]; }
+bool JSON::Object::GetBool() { return GetLast(); }
 
-int Json::Object::GetInt(std::string key) { return obj[key]; }
+int JSON::Object::GetInt() { return GetLast(); }
 
-std::string Json::Object::GetString(std::string key) { return obj[key]; }
+std::string JSON::Object::GetString() { return GetLast(); }
 
-Json::Object Json::Object::GetObject(std::string key) { return Object(obj[key]); }
+JSON::Object JSON::Object::GetObject() { return Object(GetLast()); }
 
-Json::Array Json::Object::GetArray(std::string key) { return Array(obj[key]); }
+JSON::Array JSON::Object::GetArray() { return Array(GetLast()); }
 
-bool Json::Array::HasFloat(size_t key) {
-    if (!HasKey(key)) {
+JObject JSON::Array::GetLast(){ 
+    return contextItem;
+}
+
+bool JSON::Array::Contains(size_t key) { 
+    auto exists = (key >= 0) && (key < obj.size());
+    contextItem = obj[key];
+    return exists;
+}
+
+bool JSON::Array::FetchFloat(size_t key) {
+    if (!Contains(key)) {
         return false;
     }
-    return obj[key].is_number_float();
+    return GetLast().is_number_float();
 }
 
-bool Json::Array::HasBool(size_t key) {
-    if (!HasKey(key)) {
+bool JSON::Array::FetchBool(size_t key) {
+    if (!Contains(key)) {
         return false;
     }
-    return obj[key].is_boolean();
+    return GetLast().is_boolean();
 }
 
-bool Json::Array::HasInt(size_t key) {
-    if (!HasKey(key)) {
+bool JSON::Array::FetchInt(size_t key) {
+    if (!Contains(key)) {
         return false;
     }
-    return obj[key].is_boolean();
+    return GetLast().is_boolean();
 }
 
-bool Json::Array::HasString(size_t key) {
-    if (!HasKey(key)) {
+bool JSON::Array::FetchString(size_t key) {
+    if (!Contains(key)) {
         return false;
     }
-    return obj[key].is_string();
+    return GetLast().is_string();
 }
 
-bool Json::Array::HasArray(size_t key) {
-    if (!HasKey(key)) {
+bool JSON::Array::FetchArray(size_t key) {
+    if (!Contains(key)) {
         return false;
     }
-    return obj[key].is_array();
+    return GetLast().is_array();
 }
 
-bool Json::Array::HasObject(size_t key) {
-    if (!HasKey(key)) {
+bool JSON::Array::FetchObject(size_t key) {
+    if (!Contains(key)) {
         return false;
     }
-    return obj[key].is_object();
+    return GetLast().is_object();
 }
 
-float Json::Array::GetFloat(size_t key) { return obj[key]; }
+float JSON::Array::GetFloat() { return GetLast(); }
 
-bool Json::Array::GetBool(size_t key) { return obj[key]; }
+bool JSON::Array::GetBool() { return GetLast(); }
 
-int Json::Array::GetInt(size_t key) { return obj[key]; }
+int JSON::Array::GetInt() { return GetLast(); }
 
-std::string Json::Array::GetString(size_t key) { return obj[key]; }
+std::string JSON::Array::GetString() { return GetLast(); }
 
-Json::Object Json::Array::GetObject(size_t key) { return Object(obj[key]); }
+JSON::Object JSON::Array::GetObject() { return Object(GetLast()); }
 
-Json::Array Json::Array::GetArray(size_t key) { return Array(obj[key]); }
+JSON::Array JSON::Array::GetArray() { return Array(GetLast()); }

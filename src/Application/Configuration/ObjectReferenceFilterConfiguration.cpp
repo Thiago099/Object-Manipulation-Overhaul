@@ -9,11 +9,11 @@ ObjectReferenceFilter& ObjectReferenceFilterConfiguration::Install(std::string p
     auto filter = ObjectManipulationManager::GetRaycastReferenceFilter();
     for (auto& fileName : File::Lookup(path, regex)) {
         logger::info("Loading config file: {}", fileName);
-        auto json = Json::ArrayFromFile(fileName);
-        if (json.HasObject(0)) {
-            auto obj = json.GetObject(0);
-            if (obj.HasString("action")) {
-                auto action = obj.GetString("action");
+        auto json = JSON::ArrayFromFile(fileName);
+        if (json.FetchObject(0)) {
+            auto obj = json.GetObject();
+            if (obj.FetchString("action")) {
+                auto action = obj.GetString();
                 logger::info("Action: {}", action);
             }
         }
