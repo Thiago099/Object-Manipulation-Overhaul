@@ -2,12 +2,6 @@
 #pragma once
 #include "Lib/Misc.h"
 
-struct Item {
-    float priority;
-    bool value;
-    std::string type;
-    std::vector<std::string> props;
-};
 
 class FilterItem {
 public:
@@ -43,6 +37,6 @@ public:
 class ObjectReferenceFilter {
     std::vector<FilterItem*> filters;
     public:
-    void AddLine(Item& item);
+    void AddLine(FilterItem* item);
     bool Match(RE::TESObjectREFR* item);
 };

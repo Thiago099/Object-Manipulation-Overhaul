@@ -3,76 +3,111 @@
 
 
 
+
 ObjectReferenceFilter& ObjectReferenceFilterConfiguration::Install(std::string path, std::string regex) {
     ObjectReferenceFilter group;
-    std::vector<Item> items;
+    std::vector<ObjectReferenceFilterInGetter> items;
     auto filter = ObjectManipulationManager::GetRaycastReferenceFilter();
     for (auto& fileName : File::Lookup(path, regex)) {
         logger::info("Loading config file: {}", fileName);
-        auto json = JSON::ArrayFromFile(fileName);
-        if (json.FetchObject(0)) {
-            auto obj = json.GetObject();
-            if (obj.FetchString("action")) {
-                auto action = obj.GetString();
-                logger::info("Action: {}", action);
+        auto fileItems = JSON::ArrayFromFile(fileName);
+        fileItems.FetchObject([&items](JSON::Object item) {
+            auto current = ObjectReferenceFilterInGetter(item);
+            if (current.GetFilter()) {
+                items.push_back(current);
             }
-        }
-
-        //for (auto& line : File::ReadAllLines(fileName)) {
-        //    ProcessFilterItem(line, items);
-        //}
+        });
     }
-    std::sort(items.begin(), items.end(), [](Item& a, Item& b) { 
-        return a.priority < b.priority;
+    std::sort(items.begin(), items.end(), [](ObjectReferenceFilterInGetter& a, ObjectReferenceFilterInGetter& b) { 
+        return a.GetPriority() < b.GetPriority();
     });
     for (auto& item : items) {
-        filter->AddLine(item);
+        filter->AddLine(item.GetFilter());
     }
     return group;
 }
 
-void ObjectReferenceFilterConfiguration::ProcessFilterItem(std::string& line, std::vector<Item>& items) {
-    auto itemGroups = bodyRegex.Match(line);
-    if (itemGroups.size() >= 3) {
-        auto name = Misc::ToLowerCase(itemGroups[2]);
-        auto add = itemGroups[1] == "+";
-        auto parameters = parametersRegex.MatchAll(itemGroups[3]);
-        if (parameters.size() >= 1) {
-            auto priority = 0;
-            bool hasPriority = false;
-            try {
-                priority = std::stoi(parameters[0][1]);
-                hasPriority = true;
-            } catch (const std::invalid_argument&) {
-            }
-            if (hasPriority) {
-                std::vector<std::string> props;
-                if (parameters.size() >= 2) {
-                    parameters.erase(parameters.begin());
-                    for (auto& item : parameters) {
-                        props.push_back(item[1]);
-                    }
-                }
-                auto filter = itemGroups[4];
-
-                if (filter.size() > 0) {
-                    auto filters = parametersRegex.MatchAll(itemGroups[4]);
-                    if (filters.size() > 0) {
-                        for (auto& filterMatch : filters) {
-                            auto filter = filterMatch[1];
-                            logger::trace("filter: {}", filter);
-                        }
-                    }
-                }
 
 
-
-                items.push_back(Item(priority, add, name, props));
-            } else {
-                logger::info("Expecting priority to be a number, got: {}", parameters[0][1]);
-            }
-        } else {
-            logger::error("missing priority: {}", name);
-        }
+void ObjectReferenceFilterInGetter::Loop() {
+    obj.FetchString(
+        "action", [this](std::string item) { this->SetAction(item); },
+        [](std::string error) { logger::error("Error on field action: {}", error); });
+}
+void ObjectReferenceFilterInGetter::SetAction(std::string actionSource) {
+    if (Misc::IsEqual(actionSource, "add")) {
+        action = true;
+    } else if (Misc::IsEqual(actionSource, "remove")) {
+        action = false;
+    }
+    logger::trace("action: {}", action);
+    obj.FetchFloat(
+        "priority", [this](float item) { this->SetPriority(item); }, [](std::string error) { logger::error("Error on field Priority: {}",error); });
+}
+void ObjectReferenceFilterInGetter::SetPriority(float prioritySource) {
+    priority = prioritySource;
+    logger::trace("priority: {}", priority);
+    obj.FetchObject(
+        "applyTo", [this](JSON::Object item) { this->SetApplyTo(item); },
+        [](std::string error) { logger::error("Error on field applyTo: {}", error); });
+}
+void ObjectReferenceFilterInGetter::SetApplyTo(JSON::Object applyToSource) {
+    applyTo = applyToSource;
+    logger::trace("applyTo");
+    applyTo.FetchString(
+        "type", [this](std::string item) { this->SetType(item); },
+        [](std::string error) { logger::error("Error on field type: {}", error); });
+}
+void ObjectReferenceFilterInGetter::SetType(std::string typeSource) {
+    type = typeSource;
+    logger::trace("type: {}", type);
+    if (Misc::IsEqual(type, "all")) {
+        auto current = new AllFilterItem();
+        current->value = action;
+        filter = current;
+    } else {
+        applyTo.FetchString(
+            "value", [this](std::string item) { this->SetValue(item); },
+            [](std::string error) { logger::error("Error on field value: {}", error); });
     }
 }
+void ObjectReferenceFilterInGetter::SetValue(std::string valueSource) {
+    value = valueSource;
+    logger::trace("value: {}", value);
+    if (Misc::IsEqual(type, "formType")) {
+        auto current = new FormTypeFilterItem();
+        current->value = action;
+        current->formType = Misc::StringToFormType(value);
+        filter = current;
+    } else if (Misc::IsEqual(type, "formId")) {
+        RE::FormID formId = 0;
+        applyTo.FetchString("modName", [this](std::string modNameSource) { modName = modNameSource; });
+        if (!modName.empty()) {
+            logger::trace("modName: {}", modName);
+            uint32_t localId = 0;
+            try {
+                localId = std::stoi(value, nullptr, 16);
+            } catch (const std::invalid_argument&) {
+                logger::info("Invalid form id, {}", value);
+                return;
+            }
+            if (localId != 0) {
+                const auto dataHandler = RE::TESDataHandler::GetSingleton();
+                formId = dataHandler->LookupFormID(localId, modName);
+            }
+        } else {
+            formId = std::stoi(value, nullptr, 16);
+        }
+        auto current = new FormIdFilterItem();
+        current->value = action;
+        current->formId = formId;
+        filter = current;
+    } else {
+        logger::error("Missing apply to value");
+        return;
+    }
+}
+
+FilterItem* ObjectReferenceFilterInGetter::GetFilter() { return filter; }
+
+float ObjectReferenceFilterInGetter::GetPriority() { return priority; }

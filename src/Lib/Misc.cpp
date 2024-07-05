@@ -1,5 +1,10 @@
 #include "Lib/Misc.h"
-
+bool Misc::IsEqual(const std::string& a, const std::string& b) {
+    if (a.size() != b.size()) {
+        return false;
+    }
+    return std::equal(a.begin(), a.end(), b.begin(), [](char a, char b) { return std::toupper(a) == std::toupper(b); });
+}
 void Misc::SetPosition(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position) {
     if (!ref) {
         return;

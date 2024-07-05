@@ -2,6 +2,7 @@
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 namespace Misc {
+    bool IsEqual(const std::string& a, const std::string& b);
     void SetPosition(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position);
     void SetAngle(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position);
     float DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b);

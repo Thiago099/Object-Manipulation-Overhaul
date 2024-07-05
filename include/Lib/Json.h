@@ -2,8 +2,11 @@
 
 #include <nlohmann/json.hpp>
 #include <fstream>
+#include "Lib/Misc.h"
 using JObject = nlohmann::json; 
 
+#define NOT_FOUND "Item not found"
+#define INVALID_TYPE "Item has a invalid type"
 
 namespace JSON {
 
@@ -13,51 +16,43 @@ namespace JSON {
     Object ObjectFromFile(std::string path);
     Object ObjectFromString(std::string data);
     Array ArrayFromFile(std::string path);
-    Array ArrayFromText(std::string data);
+    Array ArrayFromString(std::string data);
 
 
     class Object {
         JObject obj;    
         JObject contextItem;
+
         bool Contains(std::string& key);
         JObject GetLast();
-
     public:
+        Object() {}
             Object(JObject obj) :obj(obj){
             }
-            bool HasFloat(std::string key);
-            bool FetchBool(std::string key);
-            bool FetchInt(std::string key);
-            bool FetchString(std::string key);
-            bool FetchArray(std::string key);
-            bool FetchObject(std::string key);
-            float GetFloat();
-            bool GetBool();
-            int GetInt();
-            std::string GetString();
-            Object GetObject();
-            Array GetArray();
+            void FetchFloat(std::string key, std::function<void(float)> success, std::function<void(std::string)> failure = [](std::string) {});
+            void FetchBool(std::string key, std::function<void(bool)> success, std::function<void(std::string)> failure = [](std::string) {});
+            void FetchInt(std::string key, std::function<void(int)> success, std::function<void(std::string)> failure = [](std::string) {});
+            void FetchString(std::string key, std::function<void(std::string)> success, std::function<void(std::string)> failure = [](std::string) {});
+            void FetchObject(std::string key, std::function<void(Object)> success, std::function<void(std::string)> failure = [](std::string) {});
+            void FetchArray(std::string key, std::function<void(Array)> success, std::function<void(std::string)> failure = [](std::string) {});
     };
     class Array{
-            JObject obj;        
+            JObject obj; 
+            size_t i = 0;
             JObject contextItem;
             JObject GetLast();
-            bool Contains(size_t key);
+            bool GetNext();
+
         public:
+            Array() {}
             Array(JObject obj) : obj(obj) {
             }
-            bool FetchFloat(size_t key);
-            bool FetchBool(size_t key);
-            bool FetchInt(size_t key);
-            bool FetchString(size_t key);
-            bool FetchArray(size_t key);
-            bool FetchObject(size_t key);
-            float GetFloat();
-            bool GetBool();
-            int GetInt();
-            std::string GetString();
-            Object GetObject();
-            Array GetArray();
+            void FetchFloat(std::function<void(float)> success, std::function<void(std::string)> failure = [](std::string) {});
+            void FetchBool(std::function<void(bool)> success, std::function<void(std::string)> failure = [](std::string) {});
+            void FetchInt(std::function<void(int)> success, std::function<void(std::string)> failure = [](std::string) {});
+            void FetchString(std::function<void(std::string)> success, std::function<void(std::string)> failure = [](std::string) {});
+            void FetchObject(std::function<void(Object)> success, std::function<void(std::string)> failure = [](std::string) {});
+            void FetchArray(std::function<void(Array)> success, std::function<void(std::string)> failure = [](std::string) {});
     };
 }
 
