@@ -32,7 +32,7 @@ namespace JSON {
             Object(JObject obj) :obj(obj){
             }
             template<class T>
-            inline Nullable<T> Fetch(std::string key) {
+            inline Nullable<T> Get(std::string key) {
                 Nullable<T> result = Nullable<T>();
                 if (Contains(key)) {
                     if (isObjectType<T>(GetLast())) {
@@ -64,7 +64,7 @@ namespace JSON {
             Array(JObject obj) : obj(obj) {
             }
             template<class T>
-            inline std::vector<JSON::Nullable<T>> Fetch() {
+            inline std::vector<JSON::Nullable<T>> GetAll() {
                 std::vector<Nullable<T>> result;
                 while (GetNext()) {
                     Nullable<T> item = Nullable<T>();
@@ -96,6 +96,20 @@ namespace JSON {
         Reason reason = Reason::Valid;
 
     public:
+
+        std::string GetError(std::string fieldName, std::string fieldType = "") {
+            if (reason == KeyNotFound) {
+                return std::format("Field {} is not present", fieldName);
+            }
+            if (reason == ItemIsInvalidType) {
+                if (fieldType.size() == 0) {
+                    return std::format("Field {} is of invalid type", fieldName);
+                } else {
+                    return std::format("Field {} is expected to be of type {}", fieldName, fieldType);
+                }
+            }
+            return std::format("Unespecified error occured on field {}", fieldName);
+        }
 
         void SetValid() {
             reason = Valid;
