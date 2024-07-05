@@ -13,6 +13,8 @@ namespace JSON {
     class Nullable;
     class Object;
     class Array;
+    template <typename T>
+    class TypeName;
 
     Object ObjectFromFile(std::string path);
     Object ObjectFromString(std::string data);
@@ -97,16 +99,12 @@ namespace JSON {
 
     public:
 
-        std::string GetError(std::string fieldName, std::string fieldType = "") {
+        std::string GetError(std::string fieldName) {
             if (reason == KeyNotFound) {
                 return std::format("Field {} is not present", fieldName);
             }
             if (reason == ItemIsInvalidType) {
-                if (fieldType.size() == 0) {
-                    return std::format("Field {} is of invalid type", fieldName);
-                } else {
-                    return std::format("Field {} is expected to be of type {}", fieldName, fieldType);
-                }
+                return std::format("Field {} is expected to be {}", fieldName, TypeName<T>::value);
             }
             return std::format("Unespecified error occured on field {}", fieldName);
         }
@@ -181,5 +179,47 @@ namespace JSON {
     inline bool isObjectType<JSON::Array>(JObject obj) {
         return obj.is_array();
     }
+
+    template <typename T>
+    class TypeName {
+    public:
+        static constexpr const char* value = "";
+    };
+    
+    template <>
+    class TypeName<int> {
+    public:
+        static constexpr const char* value = "Int";
+    };
+
+    template <>
+    class TypeName<float> {
+    public:
+        static constexpr const char* value = "Float";
+    };
+
+    template <>
+    class TypeName<std::string> {
+    public:
+        static constexpr const char* value = "String";
+    };
+
+    template <>
+    class TypeName<bool> {
+    public:
+        static constexpr const char* value = "Bool";
+    };
+
+    template <>
+    class TypeName<JSON::Object> {
+    public:
+        static constexpr const char* value = "Object";
+    };
+
+    template <>
+    class TypeName<JSON::Array> {
+    public:
+        static constexpr const char* value = "Array";
+    };
 }
 
