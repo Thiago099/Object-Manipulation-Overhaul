@@ -1,43 +1,74 @@
 [
     {
-      "Action": "add",
+      "Action": "Add",
       "Priority": 0,
-      "Target": "All"
+      "ApplyTo": {
+        "Type": "All"
+      }
     },
     {
-      "Action": "remove",
+      "Action": "Remove",
       "Priority": 100,
-      "Target": "FormType",
-      "Value": "NPC"
+      "ApplyTo": {
+        "Type":"FormType",
+        "Value": "NPC"
+      }
     },
     {
-      "Action": "remove",
+      "Action": "Remove",
       "Priority": 100,
-      "Target": "FormType",
-      "Value": "Door"
+      "ApplyTo": {
+        "Type":"FormType",
+        "Value": "Door"
+      }
     },
     {
-      "Action": "remove",
+      "Action": "Remove",
       "Priority": 100,
-      "Target": "FormType",
-      "Value": "MovableStatic"
+      "ApplyTo": {
+        "Type":"FormType",
+        "Value": "MovableStatic"
+      }
     },
     {
-      "Action": "remove",
+      "Action": "Remove",
       "Priority": 100,
-      "Target": "FormType",
-      "Value": "Flora"
+      "ApplyTo": {
+        "Type":"FormType",
+        "Value": "Flora"
+      }
     },
     {
-      "Action": "remove",
+      "Action": "Remove",
       "Priority": 100,
-      "Target": "FormType",
-      "Value": "Tree"
+      "ApplyTo": {
+        "Type":"FormType",
+        "Value": "Tree"
+      }
     },
     {
-      "Action": "remove",
+      "Action": "Remove",
       "Priority": 100,
-      "Target": "FormType",
-      "Value": "Static"
+      "ApplyTo": {
+        "Type":"FormType",
+        "Value": "Static"
+      }
+    },
+    {
+      "Action": "Add",
+      "Priority": 200,
+      "ApplyTo": {
+        "Type":"FormId",
+        "ModName": "ccbgssse005-goldbrand.esl",
+        "Value": "809"
+      }
+    },
+    {
+      "Action": "Remove",
+      "Priority": 200,
+      "ApplyTo": {
+        "Type":"FormId",
+        "Value": "135BA"
+      }
     }
-  ]
+]
