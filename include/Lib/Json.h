@@ -9,7 +9,8 @@ using JObject = nlohmann::json;
 #define INVALID_TYPE "Item has a invalid type"
 
 namespace JSON {
-
+    template<class T>
+    class Nullable;
     class Object;
     class Array;
 
@@ -17,6 +18,7 @@ namespace JSON {
     Object ObjectFromString(std::string data);
     Array ArrayFromFile(std::string path);
     Array ArrayFromString(std::string data);
+
 
 
     class Object {
@@ -29,12 +31,26 @@ namespace JSON {
         Object() {}
             Object(JObject obj) :obj(obj){
             }
-            void FetchFloat(std::string key, std::function<void(float)> success, std::function<void(std::string)> failure = [](std::string) {});
-            void FetchBool(std::string key, std::function<void(bool)> success, std::function<void(std::string)> failure = [](std::string) {});
-            void FetchInt(std::string key, std::function<void(int)> success, std::function<void(std::string)> failure = [](std::string) {});
-            void FetchString(std::string key, std::function<void(std::string)> success, std::function<void(std::string)> failure = [](std::string) {});
-            void FetchObject(std::string key, std::function<void(Object)> success, std::function<void(std::string)> failure = [](std::string) {});
-            void FetchArray(std::string key, std::function<void(Array)> success, std::function<void(std::string)> failure = [](std::string) {});
+            template<class T>
+            inline Nullable<T> Fetch(std::string key) {
+                Nullable<T> result = Nullable<T>();
+                if (Contains(key)) {
+                    if (isObjectType<T>(GetLast())) {
+                        if constexpr (std::same_as<Object, T>) {
+                            result = Object(GetLast());
+                        } else if constexpr (std::same_as<Array, T>) {
+                            result = Array(GetLast());
+                        } else {
+                            result = GetLast();
+                        }
+                    } else {
+                        result.SetItemIsInvalidType();
+                    }
+                } else {
+                    result.SetKeyNotFound();
+                }
+                return result;
+            }
     };
     class Array{
             JObject obj; 
@@ -47,12 +63,109 @@ namespace JSON {
             Array() {}
             Array(JObject obj) : obj(obj) {
             }
-            void FetchFloat(std::function<void(float)> success, std::function<void(std::string)> failure = [](std::string) {});
-            void FetchBool(std::function<void(bool)> success, std::function<void(std::string)> failure = [](std::string) {});
-            void FetchInt(std::function<void(int)> success, std::function<void(std::string)> failure = [](std::string) {});
-            void FetchString(std::function<void(std::string)> success, std::function<void(std::string)> failure = [](std::string) {});
-            void FetchObject(std::function<void(Object)> success, std::function<void(std::string)> failure = [](std::string) {});
-            void FetchArray(std::function<void(Array)> success, std::function<void(std::string)> failure = [](std::string) {});
+            template<class T>
+            inline std::vector<JSON::Nullable<T>> Fetch() {
+                std::vector<Nullable<T>> result;
+                while (GetNext()) {
+                    Nullable<T> item = Nullable<T>();
+                    if (isObjectType<T>(GetLast())) {
+                        if constexpr (std::same_as<Object, T>) {
+                            item = Object(GetLast());
+                        } else if constexpr (std::same_as<Array, T>) {
+                            item = Array(GetLast());
+                        } else {
+                            item = GetLast();
+                        }
+                    } else {
+                        item.SetItemIsInvalidType();
+                    }
+                    result.push_back(item);
+                }
+                return result;
+            }
     };
+
+    template <class T>
+    class Nullable {
+        T value;
+        enum Reason {
+            Valid,
+            KeyNotFound,
+            ItemIsInvalidType
+        };
+        Reason reason = Reason::Valid;
+
+    public:
+
+        void SetValid() {
+            reason = Valid;
+        }
+        void SetKeyNotFound() {
+            reason = KeyNotFound;
+        }
+        void SetItemIsInvalidType() {
+            reason = ItemIsInvalidType;
+        }
+
+        operator bool() const noexcept { return reason == Valid; }
+        T& operator*() {
+            return value;  // Assuming 'value' is an integer
+        }
+        Nullable& operator=(const T& other) {
+            value = other;
+            return *this;  // return a reference to this object
+        }
+        T* operator->() {
+            if (reason != Valid) {
+                throw std::runtime_error("Accessing value of a null Nullable object");
+            }
+            return &value;
+        }
+
+        // Const version of operator->
+        const T* operator->() const {
+            if (reason != Valid) {
+                throw std::runtime_error("Accessing value of a null Nullable object");
+            }
+            return &value;
+        }
+    
+    };
+
+    template <typename T>
+    inline bool isObjectType(JObject obj) {
+        static_assert(true, "Type not implemented");
+        return false;
+    }
+
+    template <>
+    inline bool isObjectType<int>(JObject obj) {
+        return obj.is_number();
+    }
+
+    template <>
+    inline bool isObjectType<float>(JObject obj) {
+        return obj.is_number();
+    }
+
+    template <>
+    inline bool isObjectType<bool>(JObject obj) {
+        return obj.is_boolean();
+    }
+
+    template <>
+    inline bool isObjectType<std::string>(JObject obj) {
+        return obj.is_string();
+    }
+
+    template <>
+    inline bool isObjectType<JSON::Object>(JObject obj) {
+        return obj.is_object();
+    }
+
+    template <>
+    inline bool isObjectType<JSON::Array>(JObject obj) {
+        return obj.is_array();
+    }
 }
 

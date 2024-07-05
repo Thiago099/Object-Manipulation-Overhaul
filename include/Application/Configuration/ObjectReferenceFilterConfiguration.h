@@ -7,28 +7,17 @@
 #include "Application/ObjectManipulationManager.h"
 
 
+class ObjectReferenceFilterConfiguration;
 
 class ObjectReferenceFilterInGetter {
 private:
-    JSON::Object obj;
-    bool action = false;
     float priority = 0.f;
-    JSON::Object applyTo;
-    std::string type = "";
-    std::string value = "";
-    std::string modName = "";
     FilterItem* filter;
-    void Loop();
-    void SetAction(std::string action);
-    void SetPriority(float applyTo);
-    void SetApplyTo(JSON::Object applyToSource);
-    void SetType(std::string applyToSource);
-    void SetValue(std::string valueSource);
+    ObjectReferenceFilterInGetter() {
+    }
 
 public:
-    ObjectReferenceFilterInGetter(JSON::Object obj): obj(obj) {
-        Loop();
-    }
+    static ObjectReferenceFilterInGetter Create(JSON::Object obj);
     FilterItem* GetFilter();
     float GetPriority();
 };
