@@ -35,10 +35,10 @@ ObjectReferenceFilter& ObjectReferenceFilterConfiguration::Install(std::string p
 ObjectReferenceFilterInGetter ObjectReferenceFilterInGetter::Create(JSON::Object obj) {
     auto result = ObjectReferenceFilterInGetter();
 
-    auto actionStr = obj.Get<std::string>("action");
+    auto actionStr = obj.Get<std::string>("Action");
 
     if (!actionStr) {
-        logger::error("{}", actionStr.GetError("Action"));
+        logger::error("{}", actionStr.GetError());
         return result;
     }
 
@@ -51,24 +51,24 @@ ObjectReferenceFilterInGetter ObjectReferenceFilterInGetter::Create(JSON::Object
         action = false;
     }
 
-    auto priority = obj.Get<float>("priority");
+    auto priority = obj.Get<float>("Priority");
 
     if (!priority) {
-        logger::error("{}", priority.GetError("Priority"));
+        logger::error("{}", priority.GetError());
         return result;
     }
     logger::trace("Priority: {}", *priority);
 
     auto applyTo = obj.Get<JSON::Object>("ApplyTo");
     if (!applyTo) {
-        logger::error("{}", applyTo.GetError("ApplyTo"));
+        logger::error("{}", applyTo.GetError());
         return result;
     }
 
     auto type = applyTo->Get<std::string>("Type");
 
     if (!type) {
-        logger::error("{}", type.GetError("Type"));
+        logger::error("{}", type.GetError());
         return result;
     }
     logger::trace("Type: {}", *type);
@@ -79,10 +79,10 @@ ObjectReferenceFilterInGetter ObjectReferenceFilterInGetter::Create(JSON::Object
         result.filter = current;
         return result;
     } 
-    auto value = applyTo->Get<std::string>("value");
+    auto value = applyTo->Get<std::string>("Value");
 
     if (!value) {
-        logger::error("{}", value.GetError("Value"));
+        logger::error("{}", value.GetError());
         return result;
     }
 
@@ -98,7 +98,7 @@ ObjectReferenceFilterInGetter ObjectReferenceFilterInGetter::Create(JSON::Object
 
     if (Misc::IsEqual(*type, "formId")) {
         RE::FormID formId = 0;
-        auto modName = applyTo->Get<std::string>("modName");
+        auto modName = applyTo->Get<std::string>("ModName");
         if (modName) {
             logger::trace("ModName: {}", *modName);
 

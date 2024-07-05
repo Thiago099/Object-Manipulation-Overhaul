@@ -35,7 +35,7 @@ namespace JSON {
             }
             template<class T>
             inline Nullable<T> Get(std::string key) {
-                Nullable<T> result = Nullable<T>();
+                Nullable<T> result = Nullable<T>(key);
                 if (Contains(key)) {
                     if (isObjectType<T>(GetLast())) {
                         if constexpr (std::same_as<Object, T>) {
@@ -69,7 +69,8 @@ namespace JSON {
             inline std::vector<JSON::Nullable<T>> GetAll() {
                 std::vector<Nullable<T>> result;
                 while (GetNext()) {
-                    Nullable<T> item = Nullable<T>();
+                    std::string key = std::format("[{}]", i - 1);
+                    Nullable<T> item = Nullable<T>(key);
                     if (isObjectType<T>(GetLast())) {
                         if constexpr (std::same_as<Object, T>) {
                             item = Object(GetLast());
@@ -90,16 +91,16 @@ namespace JSON {
     template <class T>
     class Nullable {
         T value;
+        std::string fieldName;
         enum Reason {
             Valid,
             KeyNotFound,
             ItemIsInvalidType
         };
         Reason reason = Reason::Valid;
-
     public:
-
-        std::string GetError(std::string fieldName) {
+        Nullable(std::string& fieldName) : fieldName(fieldName) {}
+        std::string GetError() {
             if (reason == KeyNotFound) {
                 return std::format("Field {} is not present", fieldName);
             }
