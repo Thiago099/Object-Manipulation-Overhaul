@@ -38,7 +38,6 @@ ObjectReferenceFilterInGetter ObjectReferenceFilterInGetter::Create(JSON::Object
     auto actionStr = obj.Get<std::string>("Action");
 
     if (!actionStr) {
-        logger::error("{}", actionStr.GetError());
         return result;
     }
 
@@ -54,21 +53,18 @@ ObjectReferenceFilterInGetter ObjectReferenceFilterInGetter::Create(JSON::Object
     auto priority = obj.Get<float>("Priority");
 
     if (!priority) {
-        logger::error("{}", priority.GetError());
         return result;
     }
     logger::trace("Priority: {}", *priority);
 
     auto applyTo = obj.Get<JSON::Object>("ApplyTo");
     if (!applyTo) {
-        logger::error("{}", applyTo.GetError());
         return result;
     }
 
     auto type = applyTo->Get<std::string>("Type");
 
     if (!type) {
-        logger::error("{}", type.GetError());
         return result;
     }
     logger::trace("Type: {}", *type);
@@ -82,7 +78,6 @@ ObjectReferenceFilterInGetter ObjectReferenceFilterInGetter::Create(JSON::Object
     auto value = applyTo->Get<std::string>("Value");
 
     if (!value) {
-        logger::error("{}", value.GetError());
         return result;
     }
 
