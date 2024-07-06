@@ -138,17 +138,6 @@ void ObjectManipulationManager::Update() {
         SetPlacementState(State::ValidState::Error);
     }
 
-    if (ray.object) {
-    } else {
-
-        if (auto texture = RE::TES::GetSingleton()->GetLandTexture(ray.position)) {
-            if (auto material = texture->materialType) {
-                logger::trace("ID: {}, Name: {}", material->materialID, material->materialName);
-            }
-            logger::info("IsInWater: {}",obj->IsInWater());
-        }
-
-    }
 
 }
 
@@ -240,13 +229,7 @@ bool ObjectManipulationManager::BlockActivateButton(RE::InputEvent* current) {
     return false;
 }
 
-glm::vec3 extractEulerAngles(const glm::mat3& R) {
-    float pitch = asin(-R[2][0]);
-    float yaw = atan2(R[1][0], R[0][0]);
-    float roll = atan2(R[2][1], R[2][2]);
 
-    return glm::vec3(yaw, pitch, roll);
-}
 
 void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
                                                              RE::InputEvent* const* a_event) {
@@ -302,7 +285,6 @@ void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEvent
                 Input::passiveInputManager->ProcessInput(button);
             }
         }
-
         originalFunction(a_dispatcher, a_event);
     }
 }
@@ -344,10 +326,8 @@ void ObjectManipulationManager::Input::PassiveState::Pick(RE::ButtonEvent* butto
             return true;
         };
         auto ray = RayCast::Cast(evaluator, 1000);
-        if (ray.object) {
-            if (Selection::objectReferneceFilter->Match(ray.object)) {
-                StartDraggingObject(ray.object);
-            }
+        if (Selection::objectReferneceFilter->Match(ray)) {
+            StartDraggingObject(ray.object);
         }
     }
 }

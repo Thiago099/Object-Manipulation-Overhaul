@@ -2,18 +2,16 @@
 
 
 
-bool JSON::Object::Contains(std::string& key) {
+bool JSON::Object::GetCaseInsensitive(std::string& key, JObject& outItem) {
     for (const auto item : obj.items()) {
         if (Misc::IsEqual(item.key(), key)) {
-            contextItem = item.value();
+            outItem = item.value();
             return true;
         }
     }
     return false;
 }
-JObject JSON::Object::GetLast() {
-   return contextItem;
-}
+
 
 bool ReadFile(JObject & obj, std::string path) {
     std::ifstream i(path);
@@ -53,20 +51,4 @@ JSON::Array JSON::ArrayFromFile(std::string path) {
 JSON::Array JSON::ArrayFromString(std::string data) {
     return Array(ReadText(data)); 
 }
-
-
-JObject JSON::Array::GetLast(){ 
-    return contextItem;
-}
-
-bool JSON::Array::GetNext() {
-    auto exists = i < obj.size();
-    if (exists) {
-        contextItem = obj[i];
-        i++;
-    }
-    return exists;
-}
-
-
 

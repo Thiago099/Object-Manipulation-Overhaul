@@ -21,47 +21,43 @@ namespace JSON {
     Array ArrayFromFile(std::string path);
     Array ArrayFromString(std::string data);
 
-
-    template<class T>
-    Nullable<T> CreateResponseFromObject(JObject value) {
-        Nullable<T> result = Nullable<T>();
-        if (isObjectType<T>(value)) {
-            if constexpr (std::same_as<Object, T>) {
-                result = Object(value);
-            } else if constexpr (std::same_as<Array, T>) {
-                result = Array(value);
-            } else {
-                result = value;
+    class Token {
+    protected:
+        template <class T>
+        Nullable<T> CreateResponseFromObject(JObject value) {
+            Nullable<T> result = Nullable<T>();
+            if (isObjectType<T>(value)) {
+                if constexpr (std::same_as<Object, T>) {
+                    result.Set(Object(value));
+                } else if constexpr (std::same_as<Array, T>) {
+                    result.Set(Array(value));
+                } else {
+                    result.Set(value);
+                }
             }
+            return result;
         }
-        return result;
+    };
 
-    }
 
-    class Object {
+    class Object :public Token{
         JObject obj;    
-        JObject contextItem;
-        bool Contains(std::string& key);
-        JObject GetLast();
+        bool GetCaseInsensitive(std::string& key, JObject & outItem);
     public:
         Object() {}
             Object(JObject obj) :obj(obj){
             }
             template<class T>
             inline Nullable<T> Get(std::string key) {
-                if (Contains(key)) {
-                    return CreateResponseFromObject<T>(GetLast());
+                JObject item;
+                if (GetCaseInsensitive(key, item)) {
+                    return CreateResponseFromObject<T>(item);
                 }
                 return Nullable<T>();
             }
     };
-    class Array{
+    class Array : public Token{
             JObject obj; 
-            size_t i = 0;
-            JObject contextItem;
-            JObject GetLast();
-            bool GetNext();
-
         public:
             Array() {}
             Array(JObject obj) : obj(obj) {
@@ -69,9 +65,20 @@ namespace JSON {
             template<class T>
             inline std::vector<JSON::Nullable<T>> GetAll() {
                 std::vector<Nullable<T>> result;
-                while (GetNext()) {
-                    auto item = CreateResponseFromObject<T>(GetLast());
+                for (auto& inItem : obj){
+                    auto item = CreateResponseFromObject<T>(inItem);
                     result.push_back(item);
+                }
+                return result;
+            }
+            template <class T, class E>
+            inline std::vector<E> GetAll(std::function<E(T)> tranform) {
+                std::vector<E> result;
+                for (auto& inItem : obj) {
+                    auto item = CreateResponseFromObject<T>(inItem);
+                    if (item) {
+                        result.push_back(tranform(*item));
+                    }
                 }
                 return result;
             }
@@ -80,17 +87,16 @@ namespace JSON {
     template <class T>
     class Nullable {
         T value;
-        bool isNull = true;;
+        bool isNull = true;
     public:
         Nullable() {}
         operator bool() const noexcept { return !isNull; }
-        T& operator*() {
-            return value;  // Assuming 'value' is an integer
-        }
-        Nullable& operator=(const T& other) {
-            value = other;
+        void Set(T newValue) {
+            value = newValue;
             isNull = false;
-            return *this;  // return a reference to this object
+        }
+        T& operator*() {
+            return value; 
         }
         T* operator->() {
             if (isNull) {
@@ -99,7 +105,6 @@ namespace JSON {
             return &value;
         }
 
-        // Const version of operator->
         const T* operator->() const {
             if (isNull) {
                 throw std::runtime_error("Accessing value of a null Nullable object");

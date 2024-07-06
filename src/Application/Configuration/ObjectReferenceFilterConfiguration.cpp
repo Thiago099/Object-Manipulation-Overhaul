@@ -42,12 +42,14 @@ ObjectReferenceFilterInGetter ObjectReferenceFilterInGetter::Create(JSON::Object
     }
 
     logger::trace("Action: {}", *actionStr);
-    bool action;
+    FilterItem::Action action;
 
     if (Misc::IsEqual(*actionStr, "add")) {
-        action = true;
+        action = FilterItem::Add;
     } else if (Misc::IsEqual(*actionStr, "remove")) {
-        action = false;
+        action = FilterItem::Remove;
+    } else {
+        action = FilterItem::Modify;
     }
 
     auto priority = obj.Get<float>("Priority");
@@ -71,49 +73,62 @@ ObjectReferenceFilterInGetter ObjectReferenceFilterInGetter::Create(JSON::Object
 
     if (Misc::IsEqual(*type, "all")) {
         auto current = new AllFilterItem();
-        current->value = action;
+        current->action = action;
         result.filter = current;
         return result;
     } 
-    auto value = applyTo->Get<std::string>("Value");
+    auto value = applyTo->Get<JSON::Array>("Value");
 
     if (!value) {
         return result;
     }
 
-    logger::trace("Value: {}", *value);
-
     if (Misc::IsEqual(*type, "formType")) {
         auto current = new FormTypeFilterItem();
-        current->value = action;
-        current->formType = Misc::StringToFormType(*value);
+        current->action = action;
+        current->formType = value->GetAll<std::string, RE::FormType>([](std::string item) { return Misc::StringToFormType(item); });
         result.filter = current;
         return result;
     } 
 
     if (Misc::IsEqual(*type, "formId")) {
-        RE::FormID formId = 0;
         auto modName = applyTo->Get<std::string>("ModName");
-        if (modName) {
-            logger::trace("ModName: {}", *modName);
+        logger::trace("ModName: {}", *modName);
 
-            uint32_t localId = 0;
-            try {
-                localId = std::stoi(*value, nullptr, 16);
-            } catch (const std::invalid_argument&) {
-                logger::info("Invalid form id, {}", value);
-                return result;
-            }
-            if (localId != 0) {
-                const auto dataHandler = RE::TESDataHandler::GetSingleton();
-                formId = dataHandler->LookupFormID(localId, *modName);
-            }
+        std::vector<RE::FormID> formIds;
+
+        if (modName) {
+            auto mod = *modName;
+            formIds = value->GetAll<std::string, RE::FormID>([mod](std::string item) {
+                RE::FormID formId = 0;
+                uint32_t localId = 0;
+                try {
+                    localId = std::stoi(item, nullptr, 16);
+                } catch (const std::invalid_argument&) {
+                    logger::info("Invalid form id, {}", item);
+                    return formId;
+                }
+                if (localId != 0) {
+                    const auto dataHandler = RE::TESDataHandler::GetSingleton();
+                    formId = dataHandler->LookupFormID(localId, mod);
+                }
+            return formId;
+            });
         } else {
-            formId = std::stoi(*value, nullptr, 16);
+            formIds = value->GetAll<std::string, RE::FormID>([](std::string item) {
+                RE::FormID formId = 0;
+                formId = std::stoi(item, nullptr, 16);
+                return formId;
+            });
         }
+
+       
         auto current = new FormIdFilterItem();
-        current->value = action;
-        current->formId = formId;
+        current->action = action;
+
+        formIds.erase(std::remove_if(formIds.begin(), formIds.end(), [](RE::FormID item) { return item == 0; }));
+
+        current->formId = formIds;
         result.filter = current;
         return result;
     }
