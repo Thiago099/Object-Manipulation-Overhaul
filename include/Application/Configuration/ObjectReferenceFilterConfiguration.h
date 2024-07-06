@@ -13,9 +13,6 @@ class ObjectReferenceFilterInGetter {
 private:
     float priority = 0.f;
     FilterItem* filter;
-    ObjectReferenceFilterInGetter() {
-    }
-
 public:
     static ObjectReferenceFilterInGetter Create(JSON::Object obj);
     FilterItem* GetFilter();

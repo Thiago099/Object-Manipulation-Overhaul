@@ -1,0 +1,35 @@
+[
+    {
+      "Action": "Add",
+      "Priority": 0,
+      "ApplyTo": {
+        "Type": "All"
+      },
+      "OnTarget": {
+        "Type":"All"
+      }
+    },
+    {
+      "Action": "Remove",
+      "Priority": 100,
+      "ApplyTo": {
+        "Type":"FormType",
+        "Values": ["Flora", "Tree"]
+      },
+      "OnTarget": {
+        "Type":"All"
+      }
+    },
+    {
+      "Action": "Add",
+      "Priority": 200,
+      "ApplyTo": {
+        "Type":"FormType",
+        "Values": ["Flora", "Tree"]
+      },
+      "OnTarget": {
+        "Type":"GroundTexture",
+        "Values": ["Grass","Dirt"]
+      }
+    }
+]
