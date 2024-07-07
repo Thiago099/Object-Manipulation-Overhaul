@@ -87,6 +87,8 @@ class ObjectManipulationManager {
     static void StartDraggingObject(RE::TESObjectREFR* obj);
     static void CancelDrag();
     static void CommitDrag();
+    static bool IsDragging();
+    static RE::TESObjectREFR* GetDragObject();
 
 
 

@@ -97,6 +97,10 @@ void ObjectManipulationManager::CommitDrag() {
     }
 }
 
+bool ObjectManipulationManager::IsDragging() { return State::dragState != State::Idle; }
+
+RE::TESObjectREFR* ObjectManipulationManager::GetDragObject() { return Selection::object; }
+
 void ObjectManipulationManager::Update() {
 
 

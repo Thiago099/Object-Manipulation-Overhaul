@@ -5,6 +5,7 @@ set(HEADER_FILES
 	include/Application/ObjectManipulationManager.h
 	include/Application/Configuration/ObjectReferenceFilterConfiguration.h
 	include/Application/Configuration/InputManagerConfiguration.h
+	include/Application/Persistence.h
 	include/Lib/logger.h
 	include/Lib/SKSEMenuFramework.h
 	include/Lib/HookBuilder.h
