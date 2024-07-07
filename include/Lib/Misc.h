@@ -2,6 +2,7 @@
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 namespace Misc {
+    bool IsEqual(const std::string& a, const std::string& b);
     void SetPosition(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position);
     void SetAngle(RE::TESObjectREFR* ref, const RE::NiPoint3& a_position);
     float DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b);
@@ -13,6 +14,7 @@ namespace Misc {
                      RE::TESWorldSpace* a_selfWorldSpace, const RE::NiPoint3& a_position,
                      const RE::NiPoint3& a_rotation);
     bool DoesButtonTriggerAction(RE::ButtonEvent* button, std::string action);
+    RE::MATERIAL_ID StringToMaterialId(const std::string& str);
     RE::FormType StringToFormType(const std::string& str);
     std::string ToLowerCase(const std::string& str);
 }

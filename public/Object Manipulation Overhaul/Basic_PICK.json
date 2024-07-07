@@ -1,0 +1,34 @@
+[
+    {
+      "Action": "Add",
+      "Priority": 0,
+      "ApplyTo": {
+        "Type": "All"
+      }
+    },
+    {
+      "Action": "Remove",
+      "Priority": 100,
+      "ApplyTo": {
+        "Type":"FormType",
+        "Values": ["MovableStatic", "Static", "Door", "NPC"]
+      }
+    },
+    {
+      "Action": "Add",
+      "Priority": 200,
+      "ApplyTo": {
+        "Type":"FormId",
+        "ModName": "ccbgssse005-goldbrand.esl",
+        "Values": ["809"]
+      }
+    },
+    {
+      "Action": "Remove",
+      "Priority": 200,
+      "ApplyTo": {
+        "Type":"FormId",
+        "Values": ["135BA"]
+      }
+    }
+]

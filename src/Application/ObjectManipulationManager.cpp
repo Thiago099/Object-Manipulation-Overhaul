@@ -97,6 +97,10 @@ void ObjectManipulationManager::CommitDrag() {
     }
 }
 
+bool ObjectManipulationManager::IsDragging() { return State::dragState != State::Idle; }
+
+RE::TESObjectREFR* ObjectManipulationManager::GetDragObject() { return Selection::object; }
+
 void ObjectManipulationManager::Update() {
 
 
@@ -132,23 +136,12 @@ void ObjectManipulationManager::Update() {
 
     Selection::UpdateObjectTransform(ray.position);
 
-    if (Misc::DistanceBetweenTwoPoints(cameraPosition, ray.position) < 1000) {
+    if (Misc::DistanceBetweenTwoPoints(cameraPosition, ray.position) < 1000 && Selection::placeFilter->Match(obj, ray)) {
         SetPlacementState(State::ValidState::Valid);
     } else {
         SetPlacementState(State::ValidState::Error);
     }
 
-    if (ray.object) {
-    } else {
-
-        if (auto texture = RE::TES::GetSingleton()->GetLandTexture(ray.position)) {
-            if (auto material = texture->materialType) {
-                logger::trace("ID: {}, Name: {}", material->materialID, material->materialName);
-            }
-            logger::info("IsInWater: {}",obj->IsInWater());
-        }
-
-    }
 
 }
 
@@ -156,7 +149,8 @@ InputManager* ObjectManipulationManager::GetPassiveInputManager() { return Input
 
 InputManager* ObjectManipulationManager::GetActiveInputManager() { return Input::activeInputManager; }
 
-ObjectReferenceFilter* ObjectManipulationManager::GetRaycastReferenceFilter() { return Selection::objectReferneceFilter; }
+ObjectReferenceFilter* ObjectManipulationManager::GetPickFilter() { return Selection::pickFilter; }
+ObjectReferenceFilter* ObjectManipulationManager::GetPlaceFilter() { return Selection::placeFilter; }
 
 void ObjectManipulationManager::SetdoToggleWithToggleKey(bool value) {
     Input::doToggleWithToggleKey = value;
@@ -240,13 +234,7 @@ bool ObjectManipulationManager::BlockActivateButton(RE::InputEvent* current) {
     return false;
 }
 
-glm::vec3 extractEulerAngles(const glm::mat3& R) {
-    float pitch = asin(-R[2][0]);
-    float yaw = atan2(R[1][0], R[0][0]);
-    float roll = atan2(R[2][1], R[2][2]);
 
-    return glm::vec3(yaw, pitch, roll);
-}
 
 void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
                                                              RE::InputEvent* const* a_event) {
@@ -302,7 +290,6 @@ void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEvent
                 Input::passiveInputManager->ProcessInput(button);
             }
         }
-
         originalFunction(a_dispatcher, a_event);
     }
 }
@@ -344,10 +331,8 @@ void ObjectManipulationManager::Input::PassiveState::Pick(RE::ButtonEvent* butto
             return true;
         };
         auto ray = RayCast::Cast(evaluator, 1000);
-        if (ray.object) {
-            if (Selection::objectReferneceFilter->Match(ray.object)) {
-                StartDraggingObject(ray.object);
-            }
+        if (Selection::pickFilter->Match(nullptr, ray)) {
+            StartDraggingObject(ray.object);
         }
     }
 }

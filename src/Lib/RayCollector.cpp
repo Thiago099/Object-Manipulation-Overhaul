@@ -21,7 +21,9 @@ void RayCollector::AddRayHit(const RE::hkpCdBody& body, const RE::hkpShapeRayCas
 
     const uint64_t m = 1ULL << static_cast<uint64_t>(flags);
 
-    constexpr uint64_t filter = 0x40122736;  //@TODO
+    //logger::info("Flags: {}", m);
+
+    constexpr uint64_t filter = 0x40122736 | 0x8000;
     if ((m & filter) != 0) {
         if (!evaluator(hit.getAVObject())) {
             return;

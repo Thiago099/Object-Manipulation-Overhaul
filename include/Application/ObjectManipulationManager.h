@@ -20,7 +20,8 @@ class ObjectManipulationManager {
         static inline RE::NiPoint3 lastPosition;
         static inline RE::NiPoint3 lastAngle;
         static inline void UpdateObjectTransform(RE::NiPoint3& rayPosition);
-        static inline ObjectReferenceFilter* objectReferneceFilter = new ObjectReferenceFilter();
+        static inline ObjectReferenceFilter* pickFilter = new ObjectReferenceFilter();
+        static inline ObjectReferenceFilter* placeFilter = new ObjectReferenceFilter();
     };
 
     class State {
@@ -78,13 +79,16 @@ class ObjectManipulationManager {
     public:
     static InputManager* GetPassiveInputManager();
     static InputManager* GetActiveInputManager();
-    static ObjectReferenceFilter* GetRaycastReferenceFilter();
+    static ObjectReferenceFilter* GetPickFilter();
+    static ObjectReferenceFilter* GetPlaceFilter();
     static void SetdoToggleWithToggleKey(bool value);
     static void Clean();
     static void Install();
     static void StartDraggingObject(RE::TESObjectREFR* obj);
     static void CancelDrag();
     static void CommitDrag();
+    static bool IsDragging();
+    static RE::TESObjectREFR* GetDragObject();
 
 
 
