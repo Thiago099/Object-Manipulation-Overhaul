@@ -1,6 +1,5 @@
 #pragma once
 #include "Lib/Logger.h"
-#include "Application/UI.h"
 #include "Application/Persistence.h"
 #include "Application/Configuration/InputManagerConfiguration.h"
 #include "Application/Configuration/ObjectReferenceFilterConfiguration.h"

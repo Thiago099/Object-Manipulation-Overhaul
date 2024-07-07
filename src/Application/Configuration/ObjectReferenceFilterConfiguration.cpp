@@ -31,7 +31,7 @@ ObjectReferenceFilter& ObjectReferenceFilterConfiguration::InstallPlace(std::str
     std::vector<PlaceFilter> items;
     auto filter = ObjectManipulationManager::GetPlaceFilter();
     for (auto& fileName : File::Lookup(path, regex)) {
-        logger::info("Loading pick config file: {}", fileName);
+        logger::info("Loading place config file: {}", fileName);
         auto fileItems = JSON::ArrayFromFile(fileName);
         for (auto item : fileItems.GetAll<JSON::Object>()) {
             auto current = ObjectReferenceFilterInGetter::CreatePlace(*item);
@@ -115,11 +115,11 @@ FilterItem* ObjectReferenceFilterInGetter::ReadObjectData(JSON::Object& obj, JSO
 
     if (Misc::IsEqual(*type, "formId")) {
         auto modName = subObj.Get<std::string>("ModName");
-        logger::trace("ModName: {}", *modName);
 
         std::vector<RE::FormID> formIds;
 
         if (modName) {
+            logger::trace("ModName: {}", *modName);
             auto mod = *modName;
             formIds = values->GetAll<std::string, RE::FormID>([mod](std::string item) {
                 RE::FormID formId = 0;
@@ -127,7 +127,7 @@ FilterItem* ObjectReferenceFilterInGetter::ReadObjectData(JSON::Object& obj, JSO
                 try {
                     localId = std::stoi(item, nullptr, 16);
                 } catch (const std::invalid_argument&) {
-                    logger::info("Invalid form id, {}", item);
+                    logger::error("Invalid form id, {}", item);
                     return formId;
                 }
                 if (localId != 0) {

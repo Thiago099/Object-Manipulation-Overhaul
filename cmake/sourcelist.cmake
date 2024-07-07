@@ -1,6 +1,5 @@
 set(SOURCE_FILES
 	src/plugin.cpp
-	src/Application/UI.cpp
 	src/Application/ObjectManipulationManager.cpp
 	src/Application/Configuration/ObjectReferenceFilterConfiguration.cpp
 	src/Application/Configuration/InputManagerConfiguration.cpp
