@@ -17,7 +17,7 @@ public:
 };
 class AllFilterItem : public FilterItem {
 public:
-    bool Run(RayCastResult& item) const override { return true; }
+    bool Run(RayCastResult&) const override { return true; }
 };
 class FormTypeFilterItem : public FilterItem {
 public:

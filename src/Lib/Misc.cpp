@@ -27,7 +27,7 @@ float Misc::DistanceBetweenTwoPoints(RE::NiPoint3& a, RE::NiPoint3& b) {
     double dx = b.x - a.x;
     double dy = b.y - a.y;
     double dz = b.z - a.z;
-    return std::sqrt(dx * dx + dy * dy + dz * dz);
+    return (float)std::sqrt(dx * dx + dy * dy + dz * dz);
 }
 
 float Misc::NormalizeAngle(float angle) {

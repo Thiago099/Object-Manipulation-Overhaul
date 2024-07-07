@@ -225,7 +225,6 @@ bool ObjectManipulationManager::UpdatePlaceholderPosition() {
 }
 
 bool ObjectManipulationManager::BlockActivateButton(RE::InputEvent* current) {
-    bool suppress = false;
     if (auto button = current->AsButtonEvent()) {
         if(Misc::DoesButtonTriggerAction(button, "Activate")){
             return true;
@@ -298,24 +297,24 @@ bool ObjectManipulationManager::Input::ActiveState::ProcessMouseMovement(RE::Mou
     if (Input::isToggleRotateDown) {
         auto sensitivity = 0.005;
         if (Input::IsAdvancedMode) {
-            Selection::rotateOffset.y += move->mouseInputY * sensitivity;
+            Selection::rotateOffset.y += (float)(move->mouseInputY * sensitivity);
         }
 
         Selection::rotateOffset.y = Misc::NormalizeAngle(Selection::rotateOffset.y);
 
         if (glm::abs(Selection::rotateOffset.y) > glm::half_pi<float>()) {
-            Selection::rotateOffset.x -= move->mouseInputX * sensitivity;
+            Selection::rotateOffset.x -= (float)(move->mouseInputX * sensitivity);
         } else {
-            Selection::rotateOffset.x += move->mouseInputX * sensitivity;
+            Selection::rotateOffset.x += (float)move->mouseInputX * sensitivity);
         }
         Selection::rotateOffset.y = Misc::NormalizeAngle(Selection::rotateOffset.y);
         return true;
     } else if (Input::isToggleMoveDown) {
         auto sensitivity = 0.1;
         if (Input::IsAdvancedMode) {
-            Selection::moveOffset.x += move->mouseInputX * sensitivity;
+            Selection::moveOffset.x += (float)(move->mouseInputX * sensitivity);
         }
-        Selection::moveOffset.y += move->mouseInputY * sensitivity;
+        Selection::moveOffset.y += (float)(move->mouseInputY * sensitivity);
         return true;
     }
     return false;
