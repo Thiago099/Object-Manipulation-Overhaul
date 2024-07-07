@@ -106,6 +106,13 @@ FilterItem* ObjectReferenceFilterInGetter::ReadObjectData(JSON::Object& obj, JSO
         return current;
     }
 
+    if (Misc::IsEqual(*type, "groundTexture")) {
+        auto current = new LandTextureFilter();
+        current->action = *action;
+        current->materialIds = values->GetAll<std::string, RE::MATERIAL_ID>([](std::string item) { return Misc::StringToMaterialId(item); });
+        return current;
+    }
+
     if (Misc::IsEqual(*type, "formId")) {
         auto modName = subObj.Get<std::string>("ModName");
         logger::trace("ModName: {}", *modName);

@@ -14,6 +14,7 @@ namespace Misc {
                      RE::TESWorldSpace* a_selfWorldSpace, const RE::NiPoint3& a_position,
                      const RE::NiPoint3& a_rotation);
     bool DoesButtonTriggerAction(RE::ButtonEvent* button, std::string action);
+    RE::MATERIAL_ID StringToMaterialId(const std::string& str);
     RE::FormType StringToFormType(const std::string& str);
     std::string ToLowerCase(const std::string& str);
 }
