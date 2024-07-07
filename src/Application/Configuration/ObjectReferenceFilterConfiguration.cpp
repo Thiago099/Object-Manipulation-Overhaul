@@ -35,14 +35,14 @@ ObjectReferenceFilter& ObjectReferenceFilterConfiguration::InstallPlace(std::str
         auto fileItems = JSON::ArrayFromFile(fileName);
         for (auto item : fileItems.GetAll<JSON::Object>()) {
             auto current = ObjectReferenceFilterInGetter::CreatePlace(*item);
-            if (current.applyTo) {
+            if (current.applyTo && current.onTarget) {
                 items.push_back(current);
             }
         }
     }
     std::sort(items.begin(), items.end(), [](PlaceFilter& a, PlaceFilter& b) { return a.priority < b.priority; });
     for (auto& item : items) {
-        filter->AddLine(item.applyTo, item.onTarget);
+        filter->AddLine(item.onTarget, item.applyTo);
     }
     return group;
 }
@@ -92,9 +92,9 @@ FilterItem* ObjectReferenceFilterInGetter::ReadObjectData(JSON::Object& obj, JSO
         current->action = *action;
         return current;
     }
-    auto value = subObj.Get<JSON::Array>("Value");
+    auto values = subObj.Get<JSON::Array>("Values");
 
-    if (!value) {
+    if (!values) {
         return nullptr;
     }
 
@@ -102,7 +102,7 @@ FilterItem* ObjectReferenceFilterInGetter::ReadObjectData(JSON::Object& obj, JSO
         auto current = new FormTypeFilterItem();
         current->action = *action;
         current->formType =
-            value->GetAll<std::string, RE::FormType>([](std::string item) { return Misc::StringToFormType(item); });
+            values->GetAll<std::string, RE::FormType>([](std::string item) { return Misc::StringToFormType(item); });
         return current;
     }
 
@@ -114,7 +114,7 @@ FilterItem* ObjectReferenceFilterInGetter::ReadObjectData(JSON::Object& obj, JSO
 
         if (modName) {
             auto mod = *modName;
-            formIds = value->GetAll<std::string, RE::FormID>([mod](std::string item) {
+            formIds = values->GetAll<std::string, RE::FormID>([mod](std::string item) {
                 RE::FormID formId = 0;
                 uint32_t localId = 0;
                 try {
@@ -130,7 +130,7 @@ FilterItem* ObjectReferenceFilterInGetter::ReadObjectData(JSON::Object& obj, JSO
                 return formId;
             });
         } else {
-            formIds = value->GetAll<std::string, RE::FormID>([](std::string item) {
+            formIds = values->GetAll<std::string, RE::FormID>([](std::string item) {
                 RE::FormID formId = 0;
                 formId = std::stoi(item, nullptr, 16);
                 return formId;
@@ -140,7 +140,8 @@ FilterItem* ObjectReferenceFilterInGetter::ReadObjectData(JSON::Object& obj, JSO
         auto current = new FormIdFilterItem();
         current->action = *action;
 
-        formIds.erase(std::remove_if(formIds.begin(), formIds.end(), [](RE::FormID item) { return item == 0; }));
+        formIds.erase(std::remove_if(formIds.begin(), formIds.end(), [](RE::FormID item) { return item == 0; }),
+                      formIds.end());
 
         current->formId = formIds;
         return current;

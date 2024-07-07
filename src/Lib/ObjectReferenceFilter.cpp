@@ -24,4 +24,4 @@ bool ObjectReferenceFilter::Match(RE::TESObjectREFR* source, RayCastResult& item
     }
     return isValid;
 }
-void ObjectReferenceFilter::AddLine(FilterItem* targetFilter, FilterItem* sourceFilter) { filters.push_back(FilterGroup(sourceFilter,targetFilter)); }
+void ObjectReferenceFilter::AddLine(FilterItem* targetFilter, FilterItem* sourceFilter) { filters.push_back(FilterGroup(sourceFilter, targetFilter)); }
