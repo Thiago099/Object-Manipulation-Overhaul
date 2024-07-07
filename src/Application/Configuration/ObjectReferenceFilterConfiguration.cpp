@@ -165,7 +165,7 @@ PickFilter ObjectReferenceFilterInGetter::CreatePick(JSON::Object obj) {
     }
     logger::trace("loaded pick configuration");
     auto result = PickFilter();
-    result.priority = priority;
+    result.priority = *priority;
     result.applyTo = ReadObjectData(obj, *applyTo);
     return result;
 }
@@ -179,7 +179,7 @@ PlaceFilter ObjectReferenceFilterInGetter::CreatePlace(JSON::Object obj) {
     }
     logger::trace("loaded place configuration");
     auto result = PlaceFilter();
-    result.priority = priority;
+    result.priority = *priority;
     result.applyTo = ReadObjectData(obj, *applyTo);
     result.onTarget = ReadObjectData(obj, *onTarget);
     return result;
