@@ -305,7 +305,7 @@ bool ObjectManipulationManager::Input::ActiveState::ProcessMouseMovement(RE::Mou
         if (glm::abs(Selection::rotateOffset.y) > glm::half_pi<float>()) {
             Selection::rotateOffset.x -= (float)(move->mouseInputX * sensitivity);
         } else {
-            Selection::rotateOffset.x += (float)move->mouseInputX * sensitivity);
+            Selection::rotateOffset.x += (float)(move->mouseInputX * sensitivity);
         }
         Selection::rotateOffset.y = Misc::NormalizeAngle(Selection::rotateOffset.y);
         return true;
