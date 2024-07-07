@@ -60,7 +60,7 @@ public:
         if (!ray.object) {
             if (auto texture = RE::TES::GetSingleton()->GetLandTexture(ray.position)) {
                 if (auto material = texture->materialType) {
-                    logger::info("ID:{}", material->materialID);
+                    //logger::trace("MATERIAL ID:{}", material->materialID);
                     for (auto& materialId : materialIds) {
                         if (materialId == material->materialID) {
                             return true;
