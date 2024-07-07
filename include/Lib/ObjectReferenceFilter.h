@@ -8,8 +8,7 @@ class FilterItem {
 public:
     enum Action {
         Add,
-        Remove,
-        Modify
+        Remove
     };
 
     Action action;
@@ -72,9 +71,15 @@ public:
         return false;
     }
 };
+
+struct FilterGroup {
+    FilterItem* sourceFilter;
+    FilterItem* targetFilter;
+};
+
 class ObjectReferenceFilter {
-    std::vector<FilterItem*> filters;
+    std::vector<FilterGroup> filters;
     public:
-    void AddLine(FilterItem* item);
-    bool Match(RayCastResult& item);
+    void AddLine(FilterItem* targetFilter, FilterItem* sourceFilter = nullptr);
+    bool Match(RE::TESObjectREFR* source, RayCastResult& item);
 };

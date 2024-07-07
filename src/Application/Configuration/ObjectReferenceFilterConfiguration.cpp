@@ -4,95 +4,110 @@
 
 
 
-ObjectReferenceFilter& ObjectReferenceFilterConfiguration::Install(std::string path, std::string regex) {
+ObjectReferenceFilter& ObjectReferenceFilterConfiguration::InstallPick(std::string path, std::string regex) {
     ObjectReferenceFilter group;
-    std::vector<ObjectReferenceFilterInGetter> items;
-    auto filter = ObjectManipulationManager::GetRaycastReferenceFilter();
+    std::vector<PickFilter> items;
+    auto filter = ObjectManipulationManager::GetPickFilter();
     for (auto& fileName : File::Lookup(path, regex)) {
-        logger::info("Loading config file: {}", fileName);
+        logger::info("Loading pick config file: {}", fileName);
         auto fileItems = JSON::ArrayFromFile(fileName);
-
         for (auto item : fileItems.GetAll<JSON::Object>()) {
-            auto current = ObjectReferenceFilterInGetter::Create(*item);
-            if (current.GetFilter()) {
+            auto current = ObjectReferenceFilterInGetter::CreatePick(*item);
+            if (current.applyTo) {
                 items.push_back(current);
             }
         }
-
-
     }
-    std::sort(items.begin(), items.end(), [](ObjectReferenceFilterInGetter& a, ObjectReferenceFilterInGetter& b) { 
-        return a.GetPriority() < b.GetPriority();
+    std::sort(items.begin(), items.end(), [](PickFilter& a, PickFilter& b) { 
+        return a.priority < b.priority;
     });
     for (auto& item : items) {
-        filter->AddLine(item.GetFilter());
+        filter->AddLine(item.applyTo);
+    }
+    return group;
+}
+ObjectReferenceFilter& ObjectReferenceFilterConfiguration::InstallPlace(std::string path, std::string regex) {
+    ObjectReferenceFilter group;
+    std::vector<PlaceFilter> items;
+    auto filter = ObjectManipulationManager::GetPlaceFilter();
+    for (auto& fileName : File::Lookup(path, regex)) {
+        logger::info("Loading pick config file: {}", fileName);
+        auto fileItems = JSON::ArrayFromFile(fileName);
+        for (auto item : fileItems.GetAll<JSON::Object>()) {
+            auto current = ObjectReferenceFilterInGetter::CreatePlace(*item);
+            if (current.applyTo) {
+                items.push_back(current);
+            }
+        }
+    }
+    std::sort(items.begin(), items.end(), [](PlaceFilter& a, PlaceFilter& b) { return a.priority < b.priority; });
+    for (auto& item : items) {
+        filter->AddLine(item.applyTo, item.onTarget);
     }
     return group;
 }
 
 
 
-ObjectReferenceFilterInGetter ObjectReferenceFilterInGetter::Create(JSON::Object obj) {
-    auto result = ObjectReferenceFilterInGetter();
+JSON::Nullable<FilterItem::Action> ObjectReferenceFilterInGetter::ReadAction(JSON::Object& obj) {
 
-    auto actionStr = obj.Get<std::string>("Action");
+    auto action = obj.Get<std::string>("Action");
+    auto result = JSON::Nullable<FilterItem::Action>();
 
-    if (!actionStr) {
+    if (!action) {
         return result;
     }
 
-    logger::trace("Action: {}", *actionStr);
-    FilterItem::Action action;
-
-    if (Misc::IsEqual(*actionStr, "add")) {
-        action = FilterItem::Add;
-    } else if (Misc::IsEqual(*actionStr, "remove")) {
-        action = FilterItem::Remove;
-    } else {
-        action = FilterItem::Modify;
+    if (Misc::IsEqual(*action, "add")) {
+        result.Set(FilterItem::Add);
+    } else if (Misc::IsEqual(*action, "remove")) {
+        result.Set(FilterItem::Remove);
     }
 
-    auto priority = obj.Get<float>("Priority");
+    return result;
+}
 
-    if (!priority) {
-        return result;
+
+
+JSON::Nullable<JSON::Object> ObjectReferenceFilterInGetter::ReadApplyTo(JSON::Object& obj) {
+    return obj.Get<JSON::Object>("ApplyTo");
+}
+
+JSON::Nullable<JSON::Object> ObjectReferenceFilterInGetter::ReadOnTarget(JSON::Object& obj) {
+    return obj.Get<JSON::Object>("ReadOn");
+}
+
+
+FilterItem* ObjectReferenceFilterInGetter::ReadObjectData(JSON::Object& obj, JSON::Object& subObj) {
+    auto action = ReadAction(obj);
+    auto type = subObj.Get<std::string>("Type");
+
+    if (!type || !action) {
+        logger::error("configuration incomplete for item");
+        return nullptr;
     }
-    logger::trace("Priority: {}", *priority);
-
-    auto applyTo = obj.Get<JSON::Object>("ApplyTo");
-    if (!applyTo) {
-        return result;
-    }
-
-    auto type = applyTo->Get<std::string>("Type");
-
-    if (!type) {
-        return result;
-    }
-    logger::trace("Type: {}", *type);
 
     if (Misc::IsEqual(*type, "all")) {
         auto current = new AllFilterItem();
-        current->action = action;
-        result.filter = current;
-        return result;
-    } 
-    auto value = applyTo->Get<JSON::Array>("Value");
+        current->action = *action;
+        return current;
+    }
+    auto value = subObj.Get<JSON::Array>("Value");
 
     if (!value) {
-        return result;
+        return nullptr;
     }
 
     if (Misc::IsEqual(*type, "formType")) {
         auto current = new FormTypeFilterItem();
-        current->action = action;
-        current->formType = value->GetAll<std::string, RE::FormType>([](std::string item) { return Misc::StringToFormType(item); });
-        result.filter = current;
-        return result;
-    } 
+        current->action = *action;
+        current->formType =
+            value->GetAll<std::string, RE::FormType>([](std::string item) { return Misc::StringToFormType(item); });
+        return current;
+    }
 
     if (Misc::IsEqual(*type, "formId")) {
-        auto modName = applyTo->Get<std::string>("ModName");
+        auto modName = subObj.Get<std::string>("ModName");
         logger::trace("ModName: {}", *modName);
 
         std::vector<RE::FormID> formIds;
@@ -112,7 +127,7 @@ ObjectReferenceFilterInGetter ObjectReferenceFilterInGetter::Create(JSON::Object
                     const auto dataHandler = RE::TESDataHandler::GetSingleton();
                     formId = dataHandler->LookupFormID(localId, mod);
                 }
-            return formId;
+                return formId;
             });
         } else {
             formIds = value->GetAll<std::string, RE::FormID>([](std::string item) {
@@ -122,22 +137,42 @@ ObjectReferenceFilterInGetter ObjectReferenceFilterInGetter::Create(JSON::Object
             });
         }
 
-       
         auto current = new FormIdFilterItem();
-        current->action = action;
+        current->action = *action;
 
         formIds.erase(std::remove_if(formIds.begin(), formIds.end(), [](RE::FormID item) { return item == 0; }));
 
         current->formId = formIds;
-        result.filter = current;
-        return result;
+        return current;
     }
-
-    logger::error("invalid filter type {}", *type);
-
-    return result;
+    return nullptr;
 }
 
-FilterItem* ObjectReferenceFilterInGetter::GetFilter() { return filter; }
-
-float ObjectReferenceFilterInGetter::GetPriority() { return priority; }
+PickFilter ObjectReferenceFilterInGetter::CreatePick(JSON::Object obj) {
+    auto priority = obj.Get<float>("Priority");
+    auto applyTo = obj.Get<JSON::Object>("ApplyTo");
+    if (!applyTo || !priority) {
+        logger::error("Invalid pick configuration");
+        return PickFilter();
+    }
+    logger::trace("loaded pick configuration");
+    auto result = PickFilter();
+    result.priority = priority;
+    result.applyTo = ReadObjectData(obj, *applyTo);
+    return result;
+}
+PlaceFilter ObjectReferenceFilterInGetter::CreatePlace(JSON::Object obj) {
+    auto priority = obj.Get<float>("Priority");
+    auto applyTo = obj.Get<JSON::Object>("ApplyTo");
+    auto onTarget = obj.Get<JSON::Object>("OnTarget");
+    if (!applyTo || !onTarget || !priority) {
+        logger::error("Invalid place configuration");
+        return PlaceFilter();
+    }
+    logger::trace("loaded place configuration");
+    auto result = PlaceFilter();
+    result.priority = priority;
+    result.applyTo = ReadObjectData(obj, *applyTo);
+    result.onTarget = ReadObjectData(obj, *onTarget);
+    return result;
+}

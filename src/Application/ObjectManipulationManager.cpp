@@ -132,7 +132,7 @@ void ObjectManipulationManager::Update() {
 
     Selection::UpdateObjectTransform(ray.position);
 
-    if (Misc::DistanceBetweenTwoPoints(cameraPosition, ray.position) < 1000) {
+    if (Misc::DistanceBetweenTwoPoints(cameraPosition, ray.position) < 1000 && Selection::placeFilter->Match(obj, ray)) {
         SetPlacementState(State::ValidState::Valid);
     } else {
         SetPlacementState(State::ValidState::Error);
@@ -145,7 +145,8 @@ InputManager* ObjectManipulationManager::GetPassiveInputManager() { return Input
 
 InputManager* ObjectManipulationManager::GetActiveInputManager() { return Input::activeInputManager; }
 
-ObjectReferenceFilter* ObjectManipulationManager::GetRaycastReferenceFilter() { return Selection::objectReferneceFilter; }
+ObjectReferenceFilter* ObjectManipulationManager::GetPickFilter() { return Selection::pickFilter; }
+ObjectReferenceFilter* ObjectManipulationManager::GetPlaceFilter() { return Selection::placeFilter; }
 
 void ObjectManipulationManager::SetdoToggleWithToggleKey(bool value) {
     Input::doToggleWithToggleKey = value;
@@ -326,7 +327,7 @@ void ObjectManipulationManager::Input::PassiveState::Pick(RE::ButtonEvent* butto
             return true;
         };
         auto ray = RayCast::Cast(evaluator, 1000);
-        if (Selection::objectReferneceFilter->Match(ray)) {
+        if (Selection::pickFilter->Match(nullptr, ray)) {
             StartDraggingObject(ray.object);
         }
     }

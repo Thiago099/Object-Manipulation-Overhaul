@@ -5,7 +5,8 @@ namespace fs = std::filesystem;
 
 void OnMessage(SKSE::MessagingInterface::Message* message) {
     if (message->type == SKSE::MessagingInterface::kDataLoaded) {
-        ObjectReferenceFilterConfiguration::Install(".\\Data\\Object Manipulation Overhaul", ".*_OMO\\.json$");
+        ObjectReferenceFilterConfiguration::InstallPick(".\\Data\\Object Manipulation Overhaul",".*_PICK\\.json$");
+        ObjectReferenceFilterConfiguration::InstallPlace(".\\Data\\Object Manipulation Overhaul", ".*_PLACE\\.json$");
         ObjectManipulationManager::Install();
         InputManagerConfiguration::Install(".\\Data\\Object Manipulation Overhaul\\KeyConfiguration.txt");
 
