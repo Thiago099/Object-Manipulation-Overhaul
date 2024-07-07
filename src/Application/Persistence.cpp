@@ -8,7 +8,9 @@ void Persistence::SaveCallback(SKSE::SerializationInterface* a_intfc) {
         if (a_intfc->OpenRecord('PICK', 1)) {
             if (ObjectManipulationManager::IsDragging()) {
                 logger::trace("dragging");
-                a_intfc->WriteRecordData(ObjectManipulationManager::GetDragObject()->GetFormID());
+                if (auto form = ObjectManipulationManager::GetDragObject()) {
+                    a_intfc->WriteRecordData(form->GetFormID());
+                }
             } else {
                 logger::trace("not dragging");
                 a_intfc->WriteRecordData(static_cast<RE::FormID>(0));
