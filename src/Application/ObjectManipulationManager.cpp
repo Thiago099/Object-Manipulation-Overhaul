@@ -14,10 +14,10 @@
     Input::activeInputManager->AddSink("Cancel", Input::ActiveState::Cancel);
     Input::activeInputManager->AddSink("Commit", Input::ActiveState::Commit);
 
-    Input::activeInputManager->AddSink("ToggleRotate", Input::ActiveState::ToggleRotate);
-    Input::activeInputManager->AddSink("ToggleMove", Input::ActiveState::ToggleMove);
+    Input::activeInputManager->AddSink("Rotate", Input::ActiveState::ToggleRotate);
+    Input::activeInputManager->AddSink("Move", Input::ActiveState::ToggleMove);
     Input::activeInputManager->AddSink("ResetTransform", Input::ActiveState::ResetTransform);
-    Input::activeInputManager->AddSink("AdvancedMode", Input::ActiveState::AdvancedMode);
+    Input::activeInputManager->AddSink("ToggleAdvancedMode", Input::ActiveState::AdvancedMode);
  }
 
 void ObjectManipulationManager::StartDraggingObject(RE::TESObjectREFR* ref) {
