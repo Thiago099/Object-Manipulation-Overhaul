@@ -412,3 +412,21 @@ std::string Misc::ToLowerCase(const std::string& str) {
     std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) { return std::tolower(c); });
     return result;
 }
+std::vector<std::string> Misc::GetLowerCaseComponents(const std::string& s) {
+    std::vector<std::string> result;
+    std::string temp = "";
+    for (int i = 0; i < s.size(); i++) {
+        if (s[i] == '/' || s[i] == '\\') {
+            if (temp.size() > 0) {
+                result.push_back(temp);
+            }
+            temp = "";
+        } else {
+            temp += std::tolower(s[i]);
+        }
+    }
+    if (temp.size() > 0) {
+        result.push_back(temp);  // add last part after last delimiter
+    }
+    return result;
+}

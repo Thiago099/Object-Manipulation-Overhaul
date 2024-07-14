@@ -73,6 +73,36 @@ public:
     }
 };
 
+class ModelPathFilterItem : public FilterItem {
+public:
+    std::vector<std::vector<std::string>> modelPaths;
+    bool Run(RayCastResult& item) const override {
+        if (item.object) {
+            if (auto base = item.object->GetBaseObject()) {
+                if (auto model = base->As<RE::TESModel>()) {
+                    auto modelPathComponents = Misc::GetLowerCaseComponents(model->GetModel());
+                    for (auto& filter : modelPaths) {
+                        if (filter.size() > modelPathComponents.size()) {
+                            continue;
+                        }
+                        bool found = true;
+                        for (int i = 0; i < filter.size(); i++) {
+                            if (filter[i] != modelPathComponents[i]) {
+                                found = false;
+                                break;
+                            }
+                        }
+                        if (found) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+};
+
 struct FilterGroup {
     FilterItem* sourceFilter;
     FilterItem* targetFilter;

@@ -113,6 +113,15 @@ FilterItem* ObjectReferenceFilterInGetter::ReadObjectData(JSON::Object& obj, JSO
         return current;
     }
 
+    if (Misc::IsEqual(*type, "modelPath")) {
+        auto current = new ModelPathFilterItem();
+        current->action = *action;
+        current->modelPaths= values->GetAll<std::string,std::vector<std::string>>(
+            [](std::string item) { return Misc::GetLowerCaseComponents(item); });
+        return current;
+    }
+
+
     if (Misc::IsEqual(*type, "formId")) {
         auto modName = subObj.Get<std::string>("ModName");
 

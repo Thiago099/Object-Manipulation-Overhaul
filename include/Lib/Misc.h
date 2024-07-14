@@ -17,5 +17,6 @@ namespace Misc {
     RE::MATERIAL_ID StringToMaterialId(const std::string& str);
     RE::FormType StringToFormType(const std::string& str);
     std::string ToLowerCase(const std::string& str);
+    std::vector<std::string> GetLowerCaseComponents(const std::string& s);
 }
 

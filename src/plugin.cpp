@@ -18,9 +18,6 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
 
 }
 
-
-
-
 SKSEPluginLoad(const SKSE::LoadInterface* skse) {
     SKSE::Init(skse);
     SKSE::GetMessagingInterface()->RegisterListener(OnMessage);
