@@ -164,7 +164,9 @@ inline std::map<std::string, RE::BSWin32GamepadDevice::Key> gamepadMap = {
     {"leftshoulder", RE::BSWin32GamepadDevice::Key::kLeftShoulder },
     {"rightshoulder", RE::BSWin32GamepadDevice::Key::kRightShoulder },
     {"a", RE::BSWin32GamepadDevice::Key::kA },
-    {"b", RE::BSWin32GamepadDevice::Key::kB },
+    {"b", RE::BSWin32GamepadDevice::Key::kB},
     {"x", RE::BSWin32GamepadDevice::Key::kX },
-    {"y", RE::BSWin32GamepadDevice::Key::kY }
+    {"y", RE::BSWin32GamepadDevice::Key::kY },
+    {"lefttrigger", RE::BSWin32GamepadDevice::Key::kLeftTrigger },
+    {"righttrigger", RE::BSWin32GamepadDevice::Key::kRightTrigger },
 };

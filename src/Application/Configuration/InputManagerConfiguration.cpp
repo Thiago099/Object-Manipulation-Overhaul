@@ -22,4 +22,7 @@ void InputManagerConfiguration::Install(std::string path) {
     if (activeInputManager->HasSource("ToggleMoveRotate")) {
         ObjectManipulationManager::SetdoToggleWithToggleKey(true);
     }
+    if (passiveInputManager->HasSource("PickModifierKey")) {
+        ObjectManipulationManager::SetEnableDoHavePickupModifier(true);
+    }
 }

@@ -86,8 +86,8 @@ void InputManager::AddSource(std::string actionName, std::string deviceName, std
             idcode = keyIterator->second;
         } break;
         case RE::INPUT_DEVICE::kGamepad: {
-            auto keyIterator = mouseMap.find(buttonName);
-            if (keyIterator == mouseMap.end()) {
+            auto keyIterator = gamepadMap.find(buttonName);
+            if (keyIterator == gamepadMap.end()) {
                 return;
             }
             idcode = keyIterator->second;

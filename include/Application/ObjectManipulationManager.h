@@ -46,7 +46,9 @@ class ObjectManipulationManager {
             static inline REL::Relocation<decltype(thunk)> originalFunction;
         };
         static inline bool doToggleWithToggleKey = false;
+        static inline bool doHavePickUpModifier = false;
         static inline bool isToggleRotateDown = false;
+        static inline bool isPickUpModifierDown = false;
         static inline bool isToggleMoveDown = false;
         static inline bool IsAdvancedMode = false;
         static inline InputManager* passiveInputManager = new InputManager();
@@ -54,7 +56,9 @@ class ObjectManipulationManager {
 
         class PassiveState {
             public:
-            static void Pick(RE::ButtonEvent* button);
+                static void TogglePickUpModifier(RE::ButtonEvent* button);
+                static void Pick(RE::ButtonEvent* button);
+                static bool NotHaveModifierOrIsModifierOn();
         };
         class ActiveState {
             public:
@@ -65,7 +69,7 @@ class ObjectManipulationManager {
             static void Commit(RE::ButtonEvent* button);
             static void ResetTransform(RE::ButtonEvent* button);
             static void AdvancedMode(RE::ButtonEvent* button);
-            static bool ProcessMouseMovement(RE::MouseMoveEvent* move);
+            static bool ProcessMouseMovement(RE::MouseMoveEvent* move, RE::ThumbstickEvent* move2);
         };
     };
 
@@ -82,6 +86,7 @@ class ObjectManipulationManager {
     static ObjectReferenceFilter* GetPickFilter();
     static ObjectReferenceFilter* GetPlaceFilter();
     static void SetdoToggleWithToggleKey(bool value);
+    static void SetEnableDoHavePickupModifier(bool value);
     static void Clean();
     static void Install();
     static void StartDraggingObject(RE::TESObjectREFR* obj);

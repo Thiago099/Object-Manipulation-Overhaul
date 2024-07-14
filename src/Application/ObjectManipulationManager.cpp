@@ -11,6 +11,7 @@
     State::stateColorMap[State::ValidState::Error] = Misc::CreateColor(0xFF0000aa);
 
     Input::passiveInputManager->AddSink("Pick", Input::PassiveState::Pick);
+    Input::passiveInputManager->AddSink("PickModifierKey", Input::PassiveState::TogglePickUpModifier);
     Input::activeInputManager->AddSink("Cancel", Input::ActiveState::Cancel);
     Input::activeInputManager->AddSink("Commit", Input::ActiveState::Commit);
 
@@ -155,6 +156,9 @@ ObjectReferenceFilter* ObjectManipulationManager::GetPlaceFilter() { return Sele
 void ObjectManipulationManager::SetdoToggleWithToggleKey(bool value) {
     Input::doToggleWithToggleKey = value;
 }
+void ObjectManipulationManager::SetEnableDoHavePickupModifier(bool value) {
+    Input::doHavePickUpModifier = value;
+}
 
 void ObjectManipulationManager::Clean() {
     State::dragState = State::DragState::Idle;
@@ -237,7 +241,11 @@ bool ObjectManipulationManager::BlockActivateButton(RE::InputEvent* current) {
 
 void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher,
                                                              RE::InputEvent* const* a_event) {
-
+    auto ui = RE::UI::GetSingleton();
+    if (ui->IsApplicationMenuOpen() || ui->IsItemMenuOpen() || ui->IsModalMenuOpen() || ui->GameIsPaused()) {
+        originalFunction(a_dispatcher, a_event);
+        return;
+    }
     if (State::dragState != State::DragState::Idle) {
         if (State::dragState == State::DragState::Initializing) {
             TryInitialize();
@@ -254,7 +262,12 @@ void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEvent
 
             bool suppress = BlockActivateButton(current);
             if (auto move = current->AsMouseMoveEvent() ) {
-                if (ActiveState::ProcessMouseMovement(move)) {
+                if (ActiveState::ProcessMouseMovement(move,nullptr)) {
+                    suppress = true;
+                }
+            }
+            if (auto move = current->AsThumbstickEvent()) {
+                if (ActiveState::ProcessMouseMovement(nullptr, move)) {
                     suppress = true;
                 }
             }
@@ -293,35 +306,61 @@ void ObjectManipulationManager::Input::ProcessInputQueueHook::thunk(RE::BSTEvent
     }
 }
 
-bool ObjectManipulationManager::Input::ActiveState::ProcessMouseMovement(RE::MouseMoveEvent* move) {
+bool ObjectManipulationManager::Input::ActiveState::ProcessMouseMovement(RE::MouseMoveEvent* move, RE::ThumbstickEvent* move2) {
+    float x;
+    float y;
+    float sensitivity;
+
+    if (move) {
+        x = move->mouseInputX;
+        y = move->mouseInputY;
+    } else if (move2) {
+        sensitivity = 1;
+        x = move2->xValue;
+        y = -move2->yValue;
+    } else {
+        return false;
+    }
+
     if (Input::isToggleRotateDown) {
-        auto sensitivity = 0.005;
+
+        if (move) {
+            sensitivity = 0.005;
+        } else if (move2) {
+            sensitivity = 0.1;
+        }
+
         if (Input::IsAdvancedMode) {
-            Selection::rotateOffset.y += (float)(move->mouseInputY * sensitivity);
+            Selection::rotateOffset.y += (float)(y * sensitivity);
         }
 
         Selection::rotateOffset.y = Misc::NormalizeAngle(Selection::rotateOffset.y);
 
         if (glm::abs(Selection::rotateOffset.y) > glm::half_pi<float>()) {
-            Selection::rotateOffset.x -= (float)(move->mouseInputX * sensitivity);
+            Selection::rotateOffset.x -= (float)(x * sensitivity);
         } else {
-            Selection::rotateOffset.x += (float)(move->mouseInputX * sensitivity);
+            Selection::rotateOffset.x += (float)(x * sensitivity);
         }
         Selection::rotateOffset.y = Misc::NormalizeAngle(Selection::rotateOffset.y);
         return true;
     } else if (Input::isToggleMoveDown) {
-        auto sensitivity = 0.1;
-        if (Input::IsAdvancedMode) {
-            Selection::moveOffset.x += (float)(move->mouseInputX * sensitivity);
+        if (move) {
+            sensitivity = 0.1;
+        } else if (move2) {
+            sensitivity = 1;
         }
-        Selection::moveOffset.y += (float)(move->mouseInputY * sensitivity);
+
+        if (Input::IsAdvancedMode) {
+            Selection::moveOffset.x += (float)(x * sensitivity);
+        }
+        Selection::moveOffset.y += (float)(y * sensitivity);
         return true;
     }
     return false;
 }
 
 void ObjectManipulationManager::Input::PassiveState::Pick(RE::ButtonEvent* button) {
-    if (button->IsDown()) {
+    if (button->IsDown() && (NotHaveModifierOrIsModifierOn())) {
         auto player3d = Misc::GetPlayer3d();
         const auto evaluator = [player3d](RE::NiAVObject* obj) {
             if (obj == player3d) {
@@ -334,6 +373,10 @@ void ObjectManipulationManager::Input::PassiveState::Pick(RE::ButtonEvent* butto
             StartDraggingObject(ray.object);
         }
     }
+}
+
+bool ObjectManipulationManager::Input::PassiveState::NotHaveModifierOrIsModifierOn() {
+    return Input::isPickUpModifierDown || !Input::doHavePickUpModifier;
 }
 
 
@@ -349,6 +392,14 @@ void ObjectManipulationManager::Input::ActiveState::ToggleRotate(RE::ButtonEvent
         Input::isToggleRotateDown = true;
     } else if (button->IsUp()) {
         Input::isToggleRotateDown = false;
+    }
+}
+
+void ObjectManipulationManager::Input::PassiveState::TogglePickUpModifier(RE::ButtonEvent* button) {
+    if (button->IsDown()) {
+        Input::isPickUpModifierDown = true;
+    } else if (button->IsUp()) {
+        Input::isPickUpModifierDown = false;
     }
 }
 
